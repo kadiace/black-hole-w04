@@ -1,0 +1,33 @@
+#pragma kernel Integrate
+
+RWStructuredBuffer<float4> _Positions;
+RWStructuredBuffer<float4> _Velocities;
+
+int _ParticleCount;
+float _DeltaTime;
+float _Gravity;
+float _FloorY;
+float _CollisionRadius;
+
+[numthreads(64, 1, 1)]
+void Integrate(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint)_ParticleCount) return;
+
+    float3 position = _Positions[i].xyz;
+    float3 velocity = _Velocities[i].xyz;
+
+    velocity.y += _Gravity * _DeltaTime;
+    position += velocity * _DeltaTime;
+
+    float lowestCenter = _FloorY + _CollisionRadius;
+    if (position.y < lowestCenter)
+    {
+        position.y = lowestCenter;
+        velocity.y = 0;
+    }
+
+    _Positions[i] = float4(position, 1);
+    _Velocities[i] = float4(velocity, 0);
+}
