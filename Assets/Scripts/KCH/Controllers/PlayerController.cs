@@ -74,6 +74,8 @@ public class PlayerController : MonoBehaviour
         CheckGround();
         ProcessJump();
         ProcessMove();
+
+        Debug.Log($"isGrounded: {_isGrounded}, groundNormal: {_groundNormal}");
     }
 
     void LateUpdate()

@@ -94,13 +94,13 @@ MonoBehaviour:
   _minPitch: -30
   _maxPitch: 70
   _moveSpeed: 20
-  _jumpAcceleration: 24
+  _jumpAcceleration: 8
   _coyoteTime: 0.1
   _jumpBufferTime: 0.15
   _jumpGroundedCheckLockTime: 0.15
   _groundLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   _groundCheckDistance: 0.1
   _groundCheckRadiusRatio: 0.9
   _maxGroundAngle: 50
