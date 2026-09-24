@@ -88,11 +88,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2213d1a5637f734a8b7e62eadbbafb8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  cameraTarget: {fileID: 8056124628795120706}
+  _cameraTarget: {fileID: 8056124628795120706}
   _mouseSensitivity: 0.12
   _gamepadSensitivity: 0.6
   _minPitch: -30
   _maxPitch: 70
+  _moveSpeed: 20
+  _jumpAcceleration: 24
+  _coyoteTime: 0.1
+  _jumpBufferTime: 0.15
+  _jumpGroundedCheckLockTime: 0.15
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  _groundCheckDistance: 0.1
+  _groundCheckRadiusRatio: 0.9
+  _maxGroundAngle: 50
+  _collider: {fileID: 6512426897433457268}
 --- !u!1 &7206700296159329084
 GameObject:
   m_ObjectHideFlags: 0

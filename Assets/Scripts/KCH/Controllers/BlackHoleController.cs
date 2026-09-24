@@ -11,9 +11,9 @@ public class BlackHoleController : MonoBehaviour
         outer.OnTriggerEntered += OuterEnter;
         inner.OnTriggerEntered += InnerEnter;
         eventHorizon.OnTriggerEntered += EventHorizonEnter;
-        outer.OnTriggerEntered += OuterExit;
-        inner.OnTriggerEntered += InnerExit;
-        eventHorizon.OnTriggerEntered += EventHorizonExit;
+        outer.OnTriggerExited += OuterExit;
+        inner.OnTriggerExited += InnerExit;
+        eventHorizon.OnTriggerExited += EventHorizonExit;
     }
 
     private void OuterEnter(Collider other)
