@@ -24,7 +24,7 @@ public class GravityManager
     {
         DestroyHole(holeType);
 
-        GameObject hole = GameObject.Instantiate(holeType == HoleType.Black ? LoadBlackHole : LoadWhiteHole);
+        GameObject hole = Object.Instantiate(holeType == HoleType.Black ? LoadBlackHole : LoadWhiteHole);
         hole.transform.position = position;
     }
 
@@ -35,12 +35,14 @@ public class GravityManager
             case HoleType.Black:
                 if (BlackHole == null)
                     return;
-                GameObject.Destroy(BlackHole.gameObject);
+                Object.Destroy(BlackHole.gameObject);
+                BlackHole = null;
                 break;
             case HoleType.White:
                 if (WhiteHole == null)
                     return;
-                GameObject.Destroy(WhiteHole.gameObject);
+                Object.Destroy(WhiteHole.gameObject);
+                WhiteHole = null;
                 break;
         }
     }

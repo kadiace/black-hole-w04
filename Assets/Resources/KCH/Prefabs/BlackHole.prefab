@@ -172,9 +172,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6a5eca32f539f643acc087b26875e26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlackHoleController
-  outer: {fileID: 6384318960417197918}
-  inner: {fileID: 2714715765434294354}
-  eventHorizon: {fileID: 7467340482293468}
+  _outer: {fileID: 6384318960417197918}
+  _inner: {fileID: 2714715765434294354}
+  _eventHorizon: {fileID: 7467340482293468}
 --- !u!1 &8573554814364048347
 GameObject:
   m_ObjectHideFlags: 0

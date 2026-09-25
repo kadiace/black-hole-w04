@@ -2,22 +2,33 @@ using UnityEngine;
 
 public class BlackHoleController : MonoBehaviour
 {
-    [SerializeField] private TriggerChecker outer;
-    [SerializeField] private TriggerChecker inner;
-    [SerializeField] private TriggerChecker eventHorizon;
+    [SerializeField]
+    private TriggerChecker _outer;
+    [SerializeField]
+    private TriggerChecker _inner;
+    [SerializeField]
+    private TriggerChecker _eventHorizon;
+
+    public System.Action OnRemoved;
 
     void Awake()
     {
         Managers.Gravity.BlackHole = this;
-        outer.transform.localScale = Managers.Gravity.GravityStat.OuterScale * Vector3.one;
-        inner.transform.localScale = Managers.Gravity.GravityStat.InnerScale * Vector3.one;
+        _outer.transform.localScale = Managers.Gravity.GravityStat.OuterScale * Vector3.one;
+        _inner.transform.localScale = Managers.Gravity.GravityStat.InnerScale * Vector3.one;
 
-        outer.OnTriggerEntered += OuterEnter;
-        inner.OnTriggerEntered += InnerEnter;
-        eventHorizon.OnTriggerEntered += EventHorizonEnter;
-        outer.OnTriggerExited += OuterExit;
-        inner.OnTriggerExited += InnerExit;
-        eventHorizon.OnTriggerExited += EventHorizonExit;
+        _outer.OnTriggerEntered += OuterEnter;
+        _inner.OnTriggerEntered += InnerEnter;
+        _eventHorizon.OnTriggerEntered += EventHorizonEnter;
+        _outer.OnTriggerExited += OuterExit;
+        _inner.OnTriggerExited += InnerExit;
+
+        Destroy(gameObject, 10f);
+    }
+
+    void OnDestroy()
+    {
+        OnRemoved?.Invoke();
     }
 
     private void OuterEnter(Collider other)
@@ -26,7 +37,7 @@ public class BlackHoleController : MonoBehaviour
         if (gravityController == null)
             return;
 
-        gravityController.SetGravityCenter(transform.position);
+        gravityController.SetGravityCenter(this, transform.position);
     }
 
     private void InnerEnter(Collider other)
@@ -44,11 +55,14 @@ public class BlackHoleController : MonoBehaviour
     private void EventHorizonEnter(Collider other)
     {
         Rigidbody rb = other.GetComponentInParent<Rigidbody>();
-        if (rb == null)
+        GravityController gravityController = other.GetComponentInParent<GravityController>();
+        if (rb == null || gravityController == null)
             return;
+
         Vector3 blackHoleOffset = transform.position - rb.transform.position;
 
         rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
+        gravityController.SetGravityCenter(this, null);
     }
 
     private void OuterExit(Collider other)
@@ -57,7 +71,7 @@ public class BlackHoleController : MonoBehaviour
         if (gravityController == null)
             return;
 
-        gravityController.SetGravityCenter(null);
+        gravityController.SetGravityCenter(this, null);
     }
 
     private void InnerExit(Collider other)
@@ -65,10 +79,5 @@ public class BlackHoleController : MonoBehaviour
         PlayerController playerController = other.GetComponentInParent<PlayerController>();
         if (playerController != null)
             playerController.InInner = false;
-    }
-
-    private void EventHorizonExit(Collider other)
-    {
-
     }
 }
