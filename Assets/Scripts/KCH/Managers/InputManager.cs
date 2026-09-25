@@ -10,20 +10,30 @@ public enum InputMode
 
 public class InputManager
 {
+    [Header("Input System")]
     private InputSystem_Actions _inputActions;
-
     private InputActionMap _playerMap;
     private InputActionMap _uiMap;
-
     private InputMode _inputMode = InputMode.Player;
 
-    public Vector2 MoveInput { get; private set; }
-    public Vector2 LookInput { get; private set; }
+    [Header("Player Mode")]
+    public Vector2 MoveInput => _inputMode == InputMode.Player ? _inputActions.Player.Move.ReadValue<Vector2>() : Vector2.zero;
+    public Vector2 LookInput => _inputMode == InputMode.Player ? _inputActions.Player.Look.ReadValue<Vector2>() : Vector2.zero;
+    public bool InteractPressed => _inputMode == InputMode.Player && _inputActions.Player.Interact.WasPressedThisFrame();
+    public bool JumpPressed => _inputMode == InputMode.Player && _inputActions.Player.Jump.WasPressedThisFrame();
+    public bool JumpHeld => _inputMode == InputMode.Player && _inputActions.Player.Jump.IsPressed();
+    public bool SprintHeld => _inputMode == InputMode.Player && _inputActions.Player.Sprint.IsPressed();
+    public bool PausePressed => _inputMode == InputMode.Player && _inputActions.Player.Pause.WasPressedThisFrame();
 
-    public bool JumpPressed { get; private set; }
-    public bool JumpHeld { get; private set; }
-    public bool InteractPressed { get; private set; }
-    public bool SprintPressed { get; private set; }
+    public bool BlackHolePressed => _inputMode == InputMode.Player && _inputActions.Player.BlackHole.WasPressedThisFrame();
+    public bool BlackHoleHeld => _inputMode == InputMode.Player && _inputActions.Player.BlackHole.IsPressed();
+    public bool BlackHoleReleased => _inputMode == InputMode.Player && _inputActions.Player.BlackHole.WasReleasedThisFrame();
+
+    public bool WhiteHolePressed => _inputMode == InputMode.Player && _inputActions.Player.WhiteHole.WasPressedThisFrame();
+    public bool WhiteHoleHeld => _inputMode == InputMode.Player && _inputActions.Player.WhiteHole.IsPressed();
+    public bool WhiteHoleReleased => _inputMode == InputMode.Player && _inputActions.Player.WhiteHole.WasReleasedThisFrame();
+
+    [Header("UI Mode")]
 
     public bool GamePadConnected { get; private set; }
 
@@ -40,36 +50,6 @@ public class InputManager
         SetInputMode(InputMode.Player);
     }
 
-    public void Update()
-    {
-        if (_inputActions == null)
-            return;
-
-        if (_inputMode == InputMode.Player)
-        {
-            MoveInput = _inputActions.Player.Move.ReadValue<Vector2>();
-            LookInput = _inputActions.Player.Look.ReadValue<Vector2>();
-
-            JumpPressed =
-                _inputActions.Player.Jump.WasPressedThisFrame();
-
-            JumpHeld =
-                _inputActions.Player.Jump.IsPressed();
-
-            InteractPressed =
-                _inputActions.Player.Interact.WasPressedThisFrame();
-        }
-        else
-        {
-            MoveInput = Vector2.zero;
-            LookInput = Vector2.zero;
-
-            JumpPressed = false;
-            JumpHeld = false;
-            InteractPressed = false;
-        }
-    }
-
     public void Clear()
     {
         _inputActions.Player.Look.performed -= CheckDeviceType;
@@ -81,27 +61,11 @@ public class InputManager
         _inputActions = null;
         _playerMap = null;
         _uiMap = null;
-
-        MoveInput = Vector2.zero;
-        LookInput = Vector2.zero;
-
-        JumpPressed = false;
-        JumpHeld = false;
-        InteractPressed = false;
-        SprintPressed = false;
     }
 
     public void SetInputMode(InputMode mode)
     {
         _inputMode = mode;
-
-        MoveInput = Vector2.zero;
-        LookInput = Vector2.zero;
-
-        JumpPressed = false;
-        JumpHeld = false;
-        InteractPressed = false;
-        SprintPressed = false;
 
         if (_inputActions == null)
             return;

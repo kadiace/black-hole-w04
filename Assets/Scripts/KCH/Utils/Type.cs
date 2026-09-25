@@ -1,7 +1,9 @@
 using UnityEngine;
 
-public struct GravityState
+public enum HoleType
 {
-    public Vector3 Center;
-    public float Acceleration;
+    Black,
+    White,
 }
+
+
