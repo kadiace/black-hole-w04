@@ -65,9 +65,10 @@ public class ShapeCutter : MonoBehaviour
             {
                 Shape.Sphere => s.CutSphere(transform.position, m_radius),
                 Shape.SphereProjection => s.CutSphereByProjection(transform.position, m_radius),
-                _ => s.CutByMesh(mesh, matrix),
+                _ => s.CutByMesh(mesh, matrix,out var outobjs,out var inobjs),
             };
-            if (ok) count++;
+            if (ok) 
+                count++;
         }
         Debug.Log($"[ShapeCutter] {count} 개 오브젝트 절단 ({sw.ElapsedMilliseconds} ms)");
     }
