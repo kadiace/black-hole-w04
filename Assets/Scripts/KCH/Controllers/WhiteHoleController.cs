@@ -8,6 +8,8 @@ public class WhiteHoleController : MonoBehaviour
     private Material _onMaterial;
     [SerializeField]
     private Material _offMaterial;
+    [SerializeField]
+    private GameObject _emission;
 
     void OnEnable()
     {
@@ -17,6 +19,7 @@ public class WhiteHoleController : MonoBehaviour
     public void SetActive(bool isActivated)
     {
         _renderer.sharedMaterial = isActivated ? _onMaterial : _offMaterial;
+        _emission.SetActive(isActivated);
     }
 
     public void Deactivate()
