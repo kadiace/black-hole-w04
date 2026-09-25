@@ -33,9 +33,13 @@ public class GravityManager
         switch (holeType)
         {
             case HoleType.Black:
+                if (BlackHole == null)
+                    return;
                 GameObject.Destroy(BlackHole.gameObject);
                 break;
             case HoleType.White:
+                if (WhiteHole == null)
+                    return;
                 GameObject.Destroy(WhiteHole.gameObject);
                 break;
         }

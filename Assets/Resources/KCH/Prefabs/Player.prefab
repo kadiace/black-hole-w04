@@ -89,7 +89,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   _cameraTarget: {fileID: 8056124628795120706}
   _mouseSensitivity: 0.12
-  _gamepadSensitivity: 0.6
+  _gamepadSensitivity: 180
   _minPitch: -80
   _maxPitch: 90
   _moveSpeed: 20

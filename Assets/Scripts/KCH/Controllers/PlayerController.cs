@@ -9,7 +9,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float _mouseSensitivity = 0.12f;
     [SerializeField]
-    private float _gamepadSensitivity = 0.6f;
+    private float _gamepadSensitivity = 180f;
     [SerializeField]
     private float _minPitch = -30f;
     [SerializeField]
