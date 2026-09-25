@@ -15,6 +15,8 @@ public class Managers : MonoBehaviour
 
     private readonly InputManager _inputManager = new();
     public static InputManager Input => Instance._inputManager;
+    private readonly GravityManager _gravityManager = new();
+    public static GravityManager Gravity => Instance._gravityManager;
 
     public static void EnsureExists()
     {
@@ -50,6 +52,7 @@ public class Managers : MonoBehaviour
 
         DontDestroyOnLoad(gameObject);
         Input.Init();
+        Gravity.Init();
     }
 
     void Update()
@@ -60,5 +63,6 @@ public class Managers : MonoBehaviour
     public static void Clear()
     {
         Input.Clear();
+        Gravity.Clear();
     }
 }

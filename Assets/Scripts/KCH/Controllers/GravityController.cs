@@ -3,8 +3,6 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class GravityController : MonoBehaviour
 {
-    [SerializeField]
-    private float gravityAcceleration = 9.81f;
     private Rigidbody _rb;
     private Vector3? _gravityCenter = null;
     public Vector3 GravityDir { get; private set; }
@@ -18,6 +16,9 @@ public class GravityController : MonoBehaviour
     {
         GravityDir = _gravityCenter.HasValue ?
             (_gravityCenter.Value - transform.position).normalized : Vector3.down;
+
+        float gravityAcceleration = _gravityCenter.HasValue ?
+            Managers.Gravity.GravityStat.BlackHoleGravity : Managers.Gravity.GravityStat.NormalGravity;
 
         _rb.AddForce(GravityDir * gravityAcceleration, ForceMode.Acceleration);
     }
