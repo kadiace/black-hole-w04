@@ -33,8 +33,6 @@ public class InputManager
     public bool WhiteHoleHeld => _inputMode == InputMode.Player && _inputActions.Player.WhiteHole.IsPressed();
     public bool WhiteHoleReleased => _inputMode == InputMode.Player && _inputActions.Player.WhiteHole.WasReleasedThisFrame();
 
-    public Vector2 ScrollInput => _inputMode == InputMode.Player ? _inputActions.Player.Scroll.ReadValue<Vector2>() : Vector2.zero;
-
     [Header("UI Mode")]
 
     public bool GamePadConnected { get; private set; }

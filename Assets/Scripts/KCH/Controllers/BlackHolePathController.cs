@@ -12,7 +12,10 @@ public class BlackHolePathController : MonoBehaviour
     private float _minDistance = 3f;
     [SerializeField]
     private float _maxDistance = 20f;
+    [SerializeField]
+    private float _moveSpeed;
     private GameObject _holePreview;
+    private float _distance;
 
     [Header("Line Renderer")]
     [SerializeField]
@@ -54,11 +57,12 @@ public class BlackHolePathController : MonoBehaviour
         }
         if (Managers.Input.BlackHoleReleased)
         {
-            Managers.Gravity.CreateHole(HoleType.Black, transform.position + transform.forward * _minDistance);
+            Managers.Gravity.CreateHole(HoleType.Black, transform.position + transform.forward * _distance);
 
             _lineRenderer.enabled = false;
             _holePreview.SetActive(false);
             _isLProcessed = false;
+            _distance = _minDistance;
         }
     }
 
@@ -76,21 +80,25 @@ public class BlackHolePathController : MonoBehaviour
         }
         if (Managers.Input.WhiteHoleReleased)
         {
-            Managers.Gravity.CreateHole(HoleType.White, transform.position + transform.forward * _minDistance);
+            Managers.Gravity.CreateHole(HoleType.White, transform.position + transform.forward * _distance);
 
             _lineRenderer.enabled = false;
             _holePreview.SetActive(false);
             _isRProcessed = false;
+            _distance = _minDistance;
         }
     }
 
     private void UpdatePreview()
     {
-        Vector3 startPosition = transform.position;
-        Vector3 previewPosition = startPosition + transform.forward * _minDistance;
+        _distance += _moveSpeed * Time.deltaTime;
+        if (_distance >= _maxDistance)
+            _distance = _minDistance;
 
-        _lineRenderer.SetPosition(0, startPosition);
-        _lineRenderer.SetPosition(1, startPosition + transform.forward * _maxDistance);
+        Vector3 previewPosition = transform.position + transform.forward * _distance;
+
+        _lineRenderer.SetPosition(0, transform.position);
+        _lineRenderer.SetPosition(1, transform.position + transform.forward * _maxDistance);
 
         _holePreview.transform.position = previewPosition;
     }
