@@ -115,11 +115,7 @@ public static partial class MeshSlicer
         {
             foreach (var m in inMeshes)
             {
-                var temp = CreatePiece(target, m, "_In", Ratio(m), options);
-                var rb = temp.AddComponent<Rigidbody>();
-                rb.isKinematic = false;
-                rb.useGravity = true;
-                temp.AddComponent<GravityController>();
+                var temp = CreatePiece(target, m, "_In", Ratio(m), options, true);
                 inside.Add(temp);
             }
         }

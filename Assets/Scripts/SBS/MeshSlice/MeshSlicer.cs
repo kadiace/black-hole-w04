@@ -1,6 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using System;
+using Object = UnityEngine.Object;
+
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -39,28 +43,36 @@ public static partial class MeshSlicer
     }
 
     /// <summary>절단 옵션.</summary>
+    [Serializable]
     public struct Options
     {
-        /// <summary>절단면(캡) 삼각형이 들어갈 서브메시 인덱스. 해당 서브메시의 머터리얼이 절단면에 적용된다.</summary>
+        [Header("공통")]
+        [Tooltip("절단면에 사용할 머터리얼의 서브메시 인덱스 (MeshRenderer.materials 순서). 기존 머터리얼을 그대로 사용한다.")]
         public int capSubmeshIndex;
-        /// <summary>절단면 UV 스케일 (로컬 단위 1당 UV 값).</summary>
+
+        [Tooltip("절단면 UV 스케일 (로컬 1 유닛당 UV)")]
         public float capUVScale;
-        /// <summary>조각 콜라이더 생성 방식.</summary>
+        [Tooltip("조각 콜라이더 생성 방식")]
         public ColliderMode colliderMode;
-        /// <summary>절단 후 원본 GameObject 파괴 여부.</summary>
+        [Tooltip("절단 후 원본 파괴 여부")]
         public bool destroyOriginal;
-        /// <summary>두 조각을 평면 법선 방향으로 밀어내는 임펄스 크기 (Rigidbody가 있을 때만).</summary>
+        [Tooltip("절단 후 조각을 밀어내는 임펄스 (평면: 법선 방향, 모양: 커터 중심에서 바깥)")]
         public float separationImpulse;
 
-        // ---- 모양(구체/메시) 절단 전용 ----
-        /// <summary>커터 안쪽 조각(원본 ∩ 커터)을 GameObject 로 남길지. false 면 파먹은 것처럼 사라짐.</summary>
+        [Header("모양(구체/메시) 절단")]
+        [Tooltip("커터 안쪽 덩어리를 조각으로 남길지. 끄면 파먹힌 것처럼 사라진다")]
         public bool keepInside;
-        /// <summary>결과가 서로 떨어진 덩어리로 나뉘면 각각 별도 GameObject 로 분리.</summary>
+        [Tooltip("결과가 떨어진 덩어리로 나뉘면 각각 별도 GameObject 로 분리")]
         public bool separateIslands;
-        /// <summary>구체 커터 정밀도 (아이코스피어 분할 단계 0~4). 높을수록 매끈하지만 느림.</summary>
+        [Tooltip("구체 커터 정밀도 (0=20면 ~ 4=5120면). 높을수록 매끈하지만 느림")]
+        [Range(0, 4)]
         public int sphereSubdivisions;
-        /// <summary>버텍스 사영 절단이 불가능한 형태(판 관통, 표면이 중점을 감싸는 경우 등)일 때 처리 방법.</summary>
+        [Tooltip("버텍스 사영 절단이 불가능한 형태(구가 얇은 판을 관통, 표면이 구 중점을 감싸듯 휜 경우 등)일 때 처리 방법.\n" +
+                 "SplitAsIs: 구에 걸린 삼각형을 원래 모양 그대로 떼어냄 / Csg: CSG 구체 절단 / None: 자르지 않음")]
         public ProjectionFallback projectionFallback;
+
+        public bool addRigidBody;
+        public bool addGravityController;
 
         public static Options Default => new Options
         {
@@ -72,7 +84,9 @@ public static partial class MeshSlicer
             capUVScale = 1f,
             colliderMode = ColliderMode.ConvexMesh,
             destroyOriginal = true,
-            separationImpulse = 0f,
+            separationImpulse = 0.5f,
+            addRigidBody = true,
+            addGravityController = true,
         };
     }
 
@@ -410,7 +424,7 @@ public static partial class MeshSlicer
     /// <summary>
     /// 조각 메시로 새 GameObject를 만들고 원본의 렌더러/콜라이더/리지드바디 설정을 복사한다.
     /// </summary>
-    static GameObject CreatePiece(GameObject src, Mesh mesh, string suffix, float massRatio, Options options)
+    static GameObject CreatePiece(GameObject src, Mesh mesh, string suffix, float massRatio, Options options, bool isIn = false)
     {
         var go = new GameObject(src.name + suffix)
         {
@@ -463,6 +477,18 @@ public static partial class MeshSlicer
                 rb.linearVelocity = srcRb.GetPointVelocity(worldCenter);
                 rb.angularVelocity = srcRb.angularVelocity;
             }
+        }
+        else if (options.addRigidBody && isIn)
+        {
+            var rb = go.AddComponent<Rigidbody>();
+            rb.mass = Mathf.Max(0.0001f, 1 * massRatio);
+            rb.useGravity = true;
+            rb.isKinematic = false;
+        }
+
+        if (options.addGravityController && isIn)
+        {
+            go.AddComponent<GravityController>();
         }
 
         // Sliceable 설정을 조각에도 복사 → 조각을 다시 자를 수 있다.
