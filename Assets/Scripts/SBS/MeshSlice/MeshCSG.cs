@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 메시 불리언 연산(CSG: 차집합/교집합).
@@ -854,3 +855,5 @@ public static class MeshCSG
 
     #endregion
 }
+
+

@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.ProBuilder.Csg;
 using UnityEngine.Rendering;
 using static UnityEditor.Progress;
-using UnityEngine.ProBuilder.Csg;
 
 public class TriData
 {

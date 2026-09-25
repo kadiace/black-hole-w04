@@ -114,7 +114,10 @@ public static partial class MeshSlicer
         if (options.keepInside)
         {
             foreach (var m in inMeshes)
-                inside.Add(CreatePiece(target, m, "_In", Ratio(m), options));
+            {
+                var temp = CreatePiece(target, m, "_In", Ratio(m), options, true);
+                inside.Add(temp);
+            }
         }
 
         if (options.destroyOriginal)
