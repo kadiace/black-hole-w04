@@ -105,6 +105,16 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "Retrieve",
+                    "type": "Button",
+                    "id": "90e33fc6-2a94-4761-b121-d86a349a6863",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -375,7 +385,7 @@
                 {
                     "name": "",
                     "id": "d39c6897-90ab-4d61-bf9a-dbc7491a7b85",
-                    "path": "<Gamepad>/leftShoulder",
+                    "path": "<Gamepad>/leftTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -397,7 +407,7 @@
                 {
                     "name": "",
                     "id": "3633d3ed-4bbe-43ba-89b7-70c2d0e14cea",
-                    "path": "<Gamepad>/rightShoulder",
+                    "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -424,6 +434,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "bafe4315-2b64-4312-ba72-c01ccc3f0b9b",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Retrieve",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b0f5071a-5de0-4a09-94da-9ae4a877f262",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Retrieve",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

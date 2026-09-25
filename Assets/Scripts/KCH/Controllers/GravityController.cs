@@ -23,8 +23,14 @@ public class GravityController : MonoBehaviour
         _rb.AddForce(GravityDir * gravityAcceleration, ForceMode.Acceleration);
     }
 
-    public void SetGravityCenter(Vector3? center)
+    public void SetGravityCenter(BlackHoleController blackHoleController, Vector3? center)
     {
+        blackHoleController.OnRemoved += RemoveGravityCenter;
         _gravityCenter = center;
+    }
+
+    private void RemoveGravityCenter()
+    {
+        _gravityCenter = null;
     }
 }

@@ -12,6 +12,13 @@ public class GravityManager
     public void Init()
     {
         GravityStat = Resources.Load<GravityStat>("KCH/Datas/GravityStat");
+
+        GameObject blackHole = Object.Instantiate(LoadBlackHole);
+        blackHole.SetActive(false);
+        BlackHole = blackHole.GetComponent<BlackHoleController>();
+        GameObject whiteHole = Object.Instantiate(LoadWhiteHole);
+        whiteHole.SetActive(false);
+        WhiteHole = whiteHole.GetComponent<WhiteHoleController>();
     }
 
     public void Clear()
@@ -20,12 +27,26 @@ public class GravityManager
         DestroyHole(HoleType.White);
     }
 
-    public void CreateHole(HoleType holeType, Vector3 position)
+    public void CreateBlackHole(Vector3 position)
     {
-        DestroyHole(holeType);
+        BlackHole.gameObject.SetActive(false);
+        BlackHole.transform.position = position;
+        BlackHole.gameObject.SetActive(true);
+        WhiteHole.SetActive(true);
+    }
 
-        GameObject hole = GameObject.Instantiate(holeType == HoleType.Black ? LoadBlackHole : LoadWhiteHole);
-        hole.transform.position = position;
+    public void CreateWhiteHole(Vector3 position)
+    {
+        WhiteHole.gameObject.SetActive(false);
+        WhiteHole.transform.position = position;
+        WhiteHole.gameObject.SetActive(true);
+        BlackHole.SetActive(true);
+    }
+
+    public void RetrieveWhiteHole()
+    {
+        WhiteHole.gameObject.SetActive(false);
+        BlackHole.SetActive(false);
     }
 
     public void DestroyHole(HoleType holeType)
@@ -35,12 +56,14 @@ public class GravityManager
             case HoleType.Black:
                 if (BlackHole == null)
                     return;
-                GameObject.Destroy(BlackHole.gameObject);
+                Object.Destroy(BlackHole.gameObject);
+                BlackHole = null;
                 break;
             case HoleType.White:
                 if (WhiteHole == null)
                     return;
-                GameObject.Destroy(WhiteHole.gameObject);
+                Object.Destroy(WhiteHole.gameObject);
+                WhiteHole = null;
                 break;
         }
     }

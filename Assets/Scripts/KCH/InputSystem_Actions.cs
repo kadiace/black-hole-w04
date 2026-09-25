@@ -191,6 +191,16 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""initialStateCheck"": false,
                     ""priority"": 0
+                },
+                {
+                    ""name"": ""Retrieve"",
+                    ""type"": ""Button"",
+                    ""id"": ""90e33fc6-2a94-4761-b121-d86a349a6863"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
                 }
             ],
             ""bindings"": [
@@ -461,7 +471,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""d39c6897-90ab-4d61-bf9a-dbc7491a7b85"",
-                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""path"": ""<Gamepad>/leftTrigger"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -483,7 +493,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""3633d3ed-4bbe-43ba-89b7-70c2d0e14cea"",
-                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""path"": ""<Gamepad>/rightTrigger"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -510,6 +520,28 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""bafe4315-2b64-4312-ba72-c01ccc3f0b9b"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Retrieve"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b0f5071a-5de0-4a09-94da-9ae4a877f262"",
+                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Retrieve"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1117,6 +1149,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
         m_Player_BlackHole = m_Player.FindAction("BlackHole", throwIfNotFound: true);
         m_Player_WhiteHole = m_Player.FindAction("WhiteHole", throwIfNotFound: true);
+        m_Player_Retrieve = m_Player.FindAction("Retrieve", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1220,6 +1253,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Pause;
     private readonly InputAction m_Player_BlackHole;
     private readonly InputAction m_Player_WhiteHole;
+    private readonly InputAction m_Player_Retrieve;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1271,6 +1305,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/WhiteHole".
         /// </summary>
         public InputAction @WhiteHole => m_Wrapper.m_Player_WhiteHole;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Retrieve".
+        /// </summary>
+        public InputAction @Retrieve => m_Wrapper.m_Player_Retrieve;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1327,6 +1365,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @WhiteHole.started += instance.OnWhiteHole;
             @WhiteHole.performed += instance.OnWhiteHole;
             @WhiteHole.canceled += instance.OnWhiteHole;
+            @Retrieve.started += instance.OnRetrieve;
+            @Retrieve.performed += instance.OnRetrieve;
+            @Retrieve.canceled += instance.OnRetrieve;
         }
 
         /// <summary>
@@ -1368,6 +1409,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @WhiteHole.started -= instance.OnWhiteHole;
             @WhiteHole.performed -= instance.OnWhiteHole;
             @WhiteHole.canceled -= instance.OnWhiteHole;
+            @Retrieve.started -= instance.OnRetrieve;
+            @Retrieve.performed -= instance.OnRetrieve;
+            @Retrieve.canceled -= instance.OnRetrieve;
         }
 
         /// <summary>
@@ -1738,6 +1782,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnWhiteHole(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Retrieve" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRetrieve(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
