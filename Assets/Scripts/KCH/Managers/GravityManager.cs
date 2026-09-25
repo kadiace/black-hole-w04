@@ -12,6 +12,13 @@ public class GravityManager
     public void Init()
     {
         GravityStat = Resources.Load<GravityStat>("KCH/Datas/GravityStat");
+
+        GameObject blackHole = Object.Instantiate(LoadBlackHole);
+        blackHole.SetActive(false);
+        BlackHole = blackHole.GetComponent<BlackHoleController>();
+        GameObject whiteHole = Object.Instantiate(LoadWhiteHole);
+        whiteHole.SetActive(false);
+        WhiteHole = whiteHole.GetComponent<WhiteHoleController>();
     }
 
     public void Clear()
@@ -22,26 +29,18 @@ public class GravityManager
 
     public void CreateBlackHole(Vector3 position)
     {
-        if (BlackHole == null)
-        {
-            GameObject hole = Object.Instantiate(LoadBlackHole);
-            hole.transform.position = position;
-            return;
-        }
+        BlackHole.gameObject.SetActive(false);
         BlackHole.transform.position = position;
         BlackHole.gameObject.SetActive(true);
+        WhiteHole.SetActive(true);
     }
 
     public void CreateWhiteHole(Vector3 position)
     {
-        if (WhiteHole == null)
-        {
-            GameObject hole = Object.Instantiate(LoadWhiteHole);
-            hole.transform.position = position;
-            return;
-        }
+        WhiteHole.gameObject.SetActive(false);
         WhiteHole.transform.position = position;
         WhiteHole.gameObject.SetActive(true);
+        BlackHole.SetActive(true);
     }
 
     public void DestroyHole(HoleType holeType)

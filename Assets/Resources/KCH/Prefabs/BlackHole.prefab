@@ -175,6 +175,8 @@ MonoBehaviour:
   _outer: {fileID: 6384318960417197918}
   _inner: {fileID: 2714715765434294354}
   _eventHorizon: {fileID: 7467340482293468}
+  _time: 10
+  _scalingDuration: 2
 --- !u!1 &8573554814364048347
 GameObject:
   m_ObjectHideFlags: 0

@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class BlackHoleController : MonoBehaviour
 {
+    [Header("Child")]
     [SerializeField]
     private TriggerChecker _outer;
     [SerializeField]
@@ -9,31 +10,76 @@ public class BlackHoleController : MonoBehaviour
     [SerializeField]
     private TriggerChecker _eventHorizon;
 
+    [Header("Activate")]
+    [SerializeField]
+    private float _time;
+    [SerializeField]
+    private float _scalingDuration;
+    private float _timer;
+    private bool _isScaling;
+    private float _scalingElapsed;
+    private (float, float) _startScale;
+    private (float, float) _targetScale;
+
     public System.Action OnRemoved;
 
     void Awake()
     {
-        Managers.Gravity.BlackHole = this;
-        _outer.transform.localScale = Managers.Gravity.GravityStat.OuterScale * Vector3.one;
-        _inner.transform.localScale = Managers.Gravity.GravityStat.InnerScale * Vector3.one;
+        _outer.transform.localScale = Vector3.zero;
+        _inner.transform.localScale = Vector3.zero;
 
         _outer.OnTriggerEntered += OuterEnter;
         _inner.OnTriggerEntered += InnerEnter;
         _eventHorizon.OnTriggerEntered += EventHorizonEnter;
         _outer.OnTriggerExited += OuterExit;
         _inner.OnTriggerExited += InnerExit;
-
-        Invoke(nameof(Deactivate), 10f);
     }
 
-    void OnDisable()
+    void Update()
     {
-        OnRemoved?.Invoke();
+        _timer -= Time.deltaTime;
+        if (_timer < 0f)
+            Deactivate();
+
+        if (_isScaling)
+        {
+            _scalingElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(_scalingElapsed / _scalingDuration);
+            t = Mathf.Pow(t, 3f);
+
+            (float startOuterScale, float startInnerScale) = _startScale;
+            (float targetOuterScale, float targetInnerScale) = _targetScale;
+
+            float outerScale = Mathf.Lerp(startOuterScale, targetOuterScale, t);
+            float innerScale = Mathf.Lerp(startInnerScale, targetInnerScale, t);
+
+            _outer.transform.localScale = outerScale * Vector3.one;
+            _inner.transform.localScale = innerScale * Vector3.one;
+        }
     }
 
-    private void Deactivate()
+    void OnEnable()
+    {
+        _isScaling = false;
+        _outer.transform.localScale = Vector3.zero;
+        _inner.transform.localScale = Vector3.zero;
+        _timer = _time;
+        SetActive(Managers.Gravity.WhiteHole == null ? false : Managers.Gravity.WhiteHole.gameObject.activeSelf);
+    }
+
+    public void SetActive(bool isActivated)
+    {
+        _isScaling = true;
+        _startScale = (_outer.transform.localScale.x, _inner.transform.localScale.x);
+        _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale) : (0f, 0f);
+        _scalingElapsed = 0f;
+    }
+
+    public void Deactivate()
     {
         gameObject.SetActive(false);
+        OnRemoved?.Invoke();
+        Managers.Gravity.WhiteHole.SetActive(false);
     }
 
     private void OuterEnter(Collider other)
