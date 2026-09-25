@@ -43,6 +43,12 @@ public class GravityManager
         BlackHole.SetActive(true);
     }
 
+    public void RetrieveWhiteHole()
+    {
+        WhiteHole.gameObject.SetActive(false);
+        BlackHole.SetActive(false);
+    }
+
     public void DestroyHole(HoleType holeType)
     {
         switch (holeType)
