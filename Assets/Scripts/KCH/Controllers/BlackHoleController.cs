@@ -8,6 +8,10 @@ public class BlackHoleController : MonoBehaviour
 
     void Awake()
     {
+        Managers.Gravity.BlackHole = this;
+        outer.transform.localScale = Managers.Gravity.GravityStat.OuterScale * Vector3.one;
+        inner.transform.localScale = Managers.Gravity.GravityStat.InnerScale * Vector3.one;
+
         outer.OnTriggerEntered += OuterEnter;
         inner.OnTriggerEntered += InnerEnter;
         eventHorizon.OnTriggerEntered += EventHorizonEnter;
@@ -39,7 +43,12 @@ public class BlackHoleController : MonoBehaviour
 
     private void EventHorizonEnter(Collider other)
     {
-        Debug.Log("Event Horizon Enter");
+        Rigidbody rb = other.GetComponentInParent<Rigidbody>();
+        if (rb == null)
+            return;
+        Vector3 blackHoleOffset = transform.position - rb.transform.position;
+
+        rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
     }
 
     private void OuterExit(Collider other)
@@ -60,6 +69,6 @@ public class BlackHoleController : MonoBehaviour
 
     private void EventHorizonExit(Collider other)
     {
-        Debug.Log("Event Horizon Exit");
+
     }
 }
