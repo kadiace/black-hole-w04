@@ -9,6 +9,8 @@ public class BlackHoleController : MonoBehaviour
     private TriggerChecker _inner;
     [SerializeField]
     private TriggerChecker _eventHorizon;
+    [SerializeField]
+    private GameObject _convergence;
 
     [Header("Activate")]
     [SerializeField]
@@ -73,6 +75,7 @@ public class BlackHoleController : MonoBehaviour
         _startScale = (_outer.transform.localScale.x, _inner.transform.localScale.x);
         _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale) : (0f, 0f);
         _scalingElapsed = 0f;
+        _convergence.SetActive(isActivated);
     }
 
     public void Deactivate()
