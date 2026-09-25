@@ -23,12 +23,17 @@ public class BlackHoleController : MonoBehaviour
         _outer.OnTriggerExited += OuterExit;
         _inner.OnTriggerExited += InnerExit;
 
-        Destroy(gameObject, 10f);
+        Invoke(nameof(Deactivate), 10f);
     }
 
-    void OnDestroy()
+    void OnDisable()
     {
         OnRemoved?.Invoke();
+    }
+
+    private void Deactivate()
+    {
+        gameObject.SetActive(false);
     }
 
     private void OuterEnter(Collider other)

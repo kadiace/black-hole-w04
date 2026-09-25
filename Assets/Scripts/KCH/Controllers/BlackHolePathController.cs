@@ -57,7 +57,7 @@ public class BlackHolePathController : MonoBehaviour
         }
         if (Managers.Input.BlackHoleReleased)
         {
-            Managers.Gravity.CreateHole(HoleType.Black, transform.position + transform.forward * _distance);
+            Managers.Gravity.CreateBlackHole(transform.position + transform.forward * _distance);
 
             _lineRenderer.enabled = false;
             _holePreview.SetActive(false);
@@ -80,7 +80,7 @@ public class BlackHolePathController : MonoBehaviour
         }
         if (Managers.Input.WhiteHoleReleased)
         {
-            Managers.Gravity.CreateHole(HoleType.White, transform.position + transform.forward * _distance);
+            Managers.Gravity.CreateWhiteHole(transform.position + transform.forward * _distance);
 
             _lineRenderer.enabled = false;
             _holePreview.SetActive(false);

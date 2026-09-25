@@ -20,12 +20,28 @@ public class GravityManager
         DestroyHole(HoleType.White);
     }
 
-    public void CreateHole(HoleType holeType, Vector3 position)
+    public void CreateBlackHole(Vector3 position)
     {
-        DestroyHole(holeType);
+        if (BlackHole == null)
+        {
+            GameObject hole = Object.Instantiate(LoadBlackHole);
+            hole.transform.position = position;
+            return;
+        }
+        BlackHole.transform.position = position;
+        BlackHole.gameObject.SetActive(true);
+    }
 
-        GameObject hole = Object.Instantiate(holeType == HoleType.Black ? LoadBlackHole : LoadWhiteHole);
-        hole.transform.position = position;
+    public void CreateWhiteHole(Vector3 position)
+    {
+        if (WhiteHole == null)
+        {
+            GameObject hole = Object.Instantiate(LoadWhiteHole);
+            hole.transform.position = position;
+            return;
+        }
+        WhiteHole.transform.position = position;
+        WhiteHole.gameObject.SetActive(true);
     }
 
     public void DestroyHole(HoleType holeType)
