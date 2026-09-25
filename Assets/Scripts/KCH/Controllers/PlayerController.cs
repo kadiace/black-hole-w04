@@ -40,8 +40,6 @@ public class PlayerController : MonoBehaviour
     private LayerMask _groundLayer;
     [SerializeField]
     private float _groundCheckDistance = 0.1f;
-    [SerializeField, Range(0.5f, 1f)]
-    private float _groundCheckRadiusRatio = 0.9f;
     [SerializeField, Range(0f, 90f)]
     private float _maxGroundAngle = 50f;
     private bool _isGrounded;
@@ -49,7 +47,20 @@ public class PlayerController : MonoBehaviour
     private bool _hasGroundContact;
     private Vector3 _contactGroundNormal = Vector3.up;
 
-    [Header("Compomenet")]
+    [Header("Gravity")]
+    [SerializeField]
+    private float _gravityRotationDuration;
+    [SerializeField]
+    private float _gravityRotationThreshold;
+    private Quaternion _baseRotation;
+    private bool _isGravityRotating;
+    private float _gravityRotationElapsed;
+    private Quaternion _gravityRotationStart;
+    private Quaternion _gravityRotationTarget;
+    public bool InInner { get; set; }
+
+
+    [Header("Component")]
     [SerializeField]
     CapsuleCollider _collider;
     Rigidbody _rb;
@@ -59,6 +70,7 @@ public class PlayerController : MonoBehaviour
     {
         _rb = GetComponent<Rigidbody>();
         _gravityController = GetComponent<GravityController>();
+        _baseRotation = _rb.rotation;
     }
 
     void Update()
@@ -66,21 +78,20 @@ public class PlayerController : MonoBehaviour
         ProcessLookInput();
         ProcessJumpInput();
         ProcessMoveInput();
+
+        CheckGround();
+        ProcessRotation();
+        ProcessMove();
     }
 
     void FixedUpdate()
     {
-        _rb.MoveRotation(Quaternion.Euler(0f, _yaw, 0f));
-        CheckGround();
         ProcessJump();
-        ProcessMove();
-
-        Debug.Log($"isGrounded: {_isGrounded}, groundNormal: {_groundNormal}");
     }
 
     void LateUpdate()
     {
-        _cameraTarget.transform.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        _cameraTarget.transform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
     }
 
     private void ProcessLookInput()
@@ -94,11 +105,6 @@ public class PlayerController : MonoBehaviour
         _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
     }
 
-    private void ProcessMoveInput()
-    {
-        _moveInput = Managers.Input.MoveInput;
-    }
-
     private void ProcessJumpInput()
     {
         if (Managers.Input.JumpPressed)
@@ -107,11 +113,16 @@ public class PlayerController : MonoBehaviour
             _jumpBufferTimer = Mathf.Max(0f, _jumpBufferTimer - Time.deltaTime);
     }
 
+    private void ProcessMoveInput()
+    {
+        _moveInput = Managers.Input.MoveInput;
+    }
+
     private void CheckGround()
     {
         if (_jumpGroundedCheckLockTimer > 0f)
         {
-            _jumpGroundedCheckLockTimer = Mathf.Max(0f, _jumpGroundedCheckLockTimer - Time.fixedDeltaTime);
+            _jumpGroundedCheckLockTimer = Mathf.Max(0f, _jumpGroundedCheckLockTimer - Time.deltaTime);
             _coyoteTimer = 0f;
             _hasGroundContact = false;
             _isGrounded = false;
@@ -152,10 +163,72 @@ public class PlayerController : MonoBehaviour
         {
             _isGrounded = false;
             _groundNormal = -_gravityController.GravityDir;
-            _coyoteTimer = Mathf.Max(0f, _coyoteTimer - Time.fixedDeltaTime);
+            _coyoteTimer = Mathf.Max(0f, _coyoteTimer - Time.deltaTime);
         }
 
         _hasGroundContact = false;
+    }
+
+    private void ProcessRotation()
+    {
+        if (!_isGravityRotating)
+        {
+            Vector3 targetUp = InInner ? -_gravityController.GravityDir : Vector3.up;
+            Vector3 baseUp = _baseRotation * Vector3.up;
+
+            Quaternion gravityCorrection = Quaternion.FromToRotation(baseUp, targetUp);
+
+            float angle = Quaternion.Angle(_baseRotation, gravityCorrection);
+
+            if (angle > _gravityRotationThreshold)
+            {
+                _gravityRotationStart = _baseRotation;
+                _gravityRotationTarget = gravityCorrection * _baseRotation;
+                _gravityRotationElapsed = 0f;
+                _isGravityRotating = true;
+            }
+        }
+        else
+        {
+            _gravityRotationElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(_gravityRotationElapsed / _gravityRotationDuration);
+            t = Mathf.SmoothStep(0f, 1f, t);
+            Quaternion rotation = Quaternion.Slerp(_gravityRotationStart, _gravityRotationTarget, t);
+
+            if (t >= 1f)
+                _isGravityRotating = false;
+
+            _baseRotation = rotation;
+        }
+
+        Vector3 yawAxis = _baseRotation * Vector3.up;
+        Quaternion yawRotation = Quaternion.AngleAxis(_yaw, yawAxis);
+        Quaternion targetRotation = yawRotation * _baseRotation;
+
+        _rb.MoveRotation(targetRotation);
+    }
+
+    private void ProcessMove()
+    {
+        if (!_isGrounded)
+            return;
+
+        Vector3 up = -_gravityController.GravityDir;
+        Vector3 forward = Vector3.ProjectOnPlane(_cameraTarget.transform.forward, up).normalized;
+        Vector3 right = Vector3.Cross(up, forward).normalized;
+        Vector3 moveDirection = right * _moveInput.x + forward * _moveInput.y;
+
+        Vector3 velocity = _rb.linearVelocity;
+        Vector3 planeVelocity = Vector3.ProjectOnPlane(velocity, up);
+        velocity -= planeVelocity;
+
+        if (moveDirection.sqrMagnitude > 0.001f)
+        {
+            moveDirection.Normalize();
+            velocity += moveDirection * _moveSpeed;
+        }
+
+        _rb.linearVelocity = velocity;
     }
 
     private void ProcessJump()
@@ -176,28 +249,6 @@ public class PlayerController : MonoBehaviour
         _rb.AddForce(_jumpAcceleration * _rb.mass * -_gravityController.GravityDir, ForceMode.Impulse);
 
         _jumpGroundedCheckLockTimer = _jumpGroundedCheckLockTime;
-    }
-
-    private void ProcessMove()
-    {
-        Vector3 up = -_gravityController.GravityDir;
-        Vector3 forward = Vector3.ProjectOnPlane(_cameraTarget.transform.forward, up).normalized;
-        Vector3 right = Vector3.Cross(up, forward).normalized;
-        Vector3 moveDirection = right * _moveInput.x + forward * _moveInput.y;
-
-        Debug.Log($"Up: {-_gravityController.GravityDir}, MoveDir: {moveDirection.normalized}");
-
-        Vector3 velocity = _rb.linearVelocity;
-        Vector3 planeVelocity = Vector3.ProjectOnPlane(velocity, up);
-        velocity -= planeVelocity;
-
-        if (moveDirection.sqrMagnitude > 0.001f)
-        {
-            moveDirection.Normalize();
-            velocity += moveDirection * _moveSpeed;
-        }
-
-        _rb.linearVelocity = velocity;
     }
 
     private void OnCollisionStay(Collision collision)

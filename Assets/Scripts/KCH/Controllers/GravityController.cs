@@ -6,7 +6,7 @@ public class GravityController : MonoBehaviour
     [SerializeField]
     private float gravityAcceleration = 9.81f;
     private Rigidbody _rb;
-    private Vector3? _gravityCenter;
+    private Vector3? _gravityCenter = null;
     public Vector3 GravityDir { get; private set; }
 
     void Awake()

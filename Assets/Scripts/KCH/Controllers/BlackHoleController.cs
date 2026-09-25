@@ -18,12 +18,23 @@ public class BlackHoleController : MonoBehaviour
 
     private void OuterEnter(Collider other)
     {
-        Debug.Log("Outer Enter");
+        GravityController gravityController = other.GetComponentInParent<GravityController>();
+        if (gravityController == null)
+            return;
+
+        gravityController.SetGravityCenter(transform.position);
     }
 
     private void InnerEnter(Collider other)
     {
-        Debug.Log("Inner Enter");
+        // 1. Rotate Player up to -GravityDir
+        PlayerController playerController = other.GetComponentInParent<PlayerController>();
+        if (playerController != null)
+            playerController.InInner = true;
+
+        // 2. Cut Rigid Body object
+
+        // 3. Affect fluid 
     }
 
     private void EventHorizonEnter(Collider other)
@@ -33,12 +44,18 @@ public class BlackHoleController : MonoBehaviour
 
     private void OuterExit(Collider other)
     {
-        Debug.Log("Outer Exit");
+        GravityController gravityController = other.GetComponentInParent<GravityController>();
+        if (gravityController == null)
+            return;
+
+        gravityController.SetGravityCenter(null);
     }
 
     private void InnerExit(Collider other)
     {
-        Debug.Log("Inner Exit");
+        PlayerController playerController = other.GetComponentInParent<PlayerController>();
+        if (playerController != null)
+            playerController.InInner = false;
     }
 
     private void EventHorizonExit(Collider other)

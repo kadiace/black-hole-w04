@@ -101,9 +101,10 @@ MonoBehaviour:
   _groundLayer:
     serializedVersion: 2
     m_Bits: 64
-  _groundCheckDistance: 0.1
-  _groundCheckRadiusRatio: 0.9
+  _groundCheckDistance: 0.01
   _maxGroundAngle: 50
+  _gravityRotationDuration: 0.2
+  _gravityRotationThreshold: 0.01
   _collider: {fileID: 6512426897433457268}
 --- !u!1 &7206700296159329084
 GameObject:
