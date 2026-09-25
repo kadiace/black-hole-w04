@@ -20,6 +20,8 @@ public class PlayerController : MonoBehaviour
     [Header("Move")]
     [SerializeField]
     private float _moveSpeed;
+    [SerializeField]
+    private float _moveAcceleration = 20f;
     private Vector2 _moveInput;
 
     [Header("Jump")]
@@ -42,7 +44,15 @@ public class PlayerController : MonoBehaviour
     private float _groundCheckDistance = 0.1f;
     [SerializeField, Range(0f, 90f)]
     private float _maxGroundAngle = 50f;
-    private bool _isGrounded;
+    private bool _isGroundedValue;
+    private bool _isGrounded
+    {
+        get => _isGroundedValue; set
+        {
+            _isGroundedValue = value;
+            _rb.isKinematic = value;
+        }
+    }
     private Vector3 _groundNormal = Vector3.up;
     private bool _hasGroundContact;
     private Vector3 _contactGroundNormal = Vector3.up;
@@ -57,6 +67,7 @@ public class PlayerController : MonoBehaviour
     private float _gravityRotationElapsed;
     private Quaternion _gravityRotationStart;
     private Quaternion _gravityRotationTarget;
+    private Vector3 _up => InInner ? -_gravityController.GravityDir : Vector3.up;
     public bool InInner { get; set; }
 
 
@@ -78,15 +89,16 @@ public class PlayerController : MonoBehaviour
         ProcessLookInput();
         ProcessJumpInput();
         ProcessMoveInput();
-
-        CheckGround();
-        ProcessRotation();
-        ProcessMove();
     }
 
     void FixedUpdate()
     {
+        CheckGround();
         ProcessJump();
+        ProcessRotation();
+        ProcessMove();
+
+        Debug.Log($"IsGrounded: {_isGrounded}");
     }
 
     void LateUpdate()
@@ -163,17 +175,37 @@ public class PlayerController : MonoBehaviour
         {
             _isGrounded = false;
             _groundNormal = -_gravityController.GravityDir;
-            _coyoteTimer = Mathf.Max(0f, _coyoteTimer - Time.deltaTime);
+            _coyoteTimer = Mathf.Max(0f, _coyoteTimer - Time.fixedDeltaTime);
         }
 
         _hasGroundContact = false;
+    }
+
+    private void ProcessJump()
+    {
+        if (_jumpBufferTimer <= 0f)
+            return;
+
+        bool canCoyote = _coyoteTimer > 0f;
+
+        if (!_isGrounded && !canCoyote)
+            return;
+
+        _jumpBufferTimer = 0f;
+
+        _jumpGroundedCheckLockTimer = _jumpGroundedCheckLockTime;
+        _rb.isKinematic = false;
+        Vector3 velocity = _rb.linearVelocity;
+        velocity.y = 0f;
+        _rb.linearVelocity = velocity;
+        _rb.AddForce(_jumpAcceleration * _rb.mass * -_gravityController.GravityDir, ForceMode.Impulse);
     }
 
     private void ProcessRotation()
     {
         if (!_isGravityRotating)
         {
-            Vector3 targetUp = InInner ? -_gravityController.GravityDir : Vector3.up;
+            Vector3 targetUp = _up;
             Vector3 baseUp = _baseRotation * Vector3.up;
 
             Quaternion gravityCorrection = Quaternion.FromToRotation(baseUp, targetUp);
@@ -190,7 +222,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            _gravityRotationElapsed += Time.deltaTime;
+            _gravityRotationElapsed += Time.fixedDeltaTime;
             float t = Mathf.Clamp01(_gravityRotationElapsed / _gravityRotationDuration);
             t = Mathf.SmoothStep(0f, 1f, t);
             Quaternion rotation = Quaternion.Slerp(_gravityRotationStart, _gravityRotationTarget, t);
@@ -210,45 +242,10 @@ public class PlayerController : MonoBehaviour
 
     private void ProcessMove()
     {
-        if (!_isGrounded)
-            return;
-
-        Vector3 up = -_gravityController.GravityDir;
-        Vector3 forward = Vector3.ProjectOnPlane(_cameraTarget.transform.forward, up).normalized;
-        Vector3 right = Vector3.Cross(up, forward).normalized;
-        Vector3 moveDirection = right * _moveInput.x + forward * _moveInput.y;
-
-        Vector3 velocity = _rb.linearVelocity;
-        Vector3 planeVelocity = Vector3.ProjectOnPlane(velocity, up);
-        velocity -= planeVelocity;
-
-        if (moveDirection.sqrMagnitude > 0.001f)
-        {
-            moveDirection.Normalize();
-            velocity += moveDirection * _moveSpeed;
-        }
-
-        _rb.linearVelocity = velocity;
-    }
-
-    private void ProcessJump()
-    {
-        if (_jumpBufferTimer <= 0f)
-            return;
-
-        bool canCoyote = _coyoteTimer > 0f;
-
-        if (!_isGrounded && !canCoyote)
-            return;
-
-        _jumpBufferTimer = 0f;
-
-        Vector3 velocity = _rb.linearVelocity;
-        velocity.y = 0f;
-        _rb.linearVelocity = velocity;
-        _rb.AddForce(_jumpAcceleration * _rb.mass * -_gravityController.GravityDir, ForceMode.Impulse);
-
-        _jumpGroundedCheckLockTimer = _jumpGroundedCheckLockTime;
+        if (_isGrounded)
+            ProcessGroundMove();
+        else
+            ProcessAirMove();
     }
 
     private void OnCollisionStay(Collision collision)
@@ -277,5 +274,31 @@ public class PlayerController : MonoBehaviour
 
         _hasGroundContact = true;
         _contactGroundNormal = bestGroundNormal;
+    }
+
+    private void ProcessGroundMove()
+    {
+        Vector3 moveDirection = GetMoveDirection();
+
+        if (moveDirection.sqrMagnitude <= 0.001f)
+            return;
+
+        moveDirection.Normalize();
+        Vector3 movement = _moveSpeed * Time.fixedDeltaTime * moveDirection;
+        _rb.MovePosition(_rb.position + movement);
+    }
+
+    private void ProcessAirMove()
+    {
+        Vector2 moveDirection = GetMoveDirection();
+        _rb.AddForce(_moveAcceleration * moveDirection, ForceMode.Acceleration);
+    }
+
+    private Vector3 GetMoveDirection()
+    {
+        Vector3 up = _up;
+        Vector3 forward = Vector3.ProjectOnPlane(_cameraTarget.transform.forward, up).normalized;
+        Vector3 right = Vector3.Cross(up, forward).normalized;
+        return right * _moveInput.x + forward * _moveInput.y;
     }
 }
