@@ -55,11 +55,6 @@ public class Managers : MonoBehaviour
         Gravity.Init();
     }
 
-    void Update()
-    {
-        Input.Update();
-    }
-
     public static void Clear()
     {
         Input.Clear();

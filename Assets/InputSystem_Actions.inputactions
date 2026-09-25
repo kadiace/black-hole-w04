@@ -47,9 +47,9 @@
                     "priority": 0
                 },
                 {
-                    "name": "Previous",
+                    "name": "Sprint",
                     "type": "Button",
-                    "id": "2776c80d-3c14-4091-8c56-d04ced07a2b0",
+                    "id": "641cd816-40e6-41b4-8c3d-04687c349290",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -57,9 +57,9 @@
                     "priority": 0
                 },
                 {
-                    "name": "Sprint",
+                    "name": "Previous",
                     "type": "Button",
-                    "id": "641cd816-40e6-41b4-8c3d-04687c349290",
+                    "id": "2776c80d-3c14-4091-8c56-d04ced07a2b0",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -74,6 +74,46 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Pause",
+                    "type": "Button",
+                    "id": "49592391-1a60-4af9-b87d-aef701d1418a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "BlackHole",
+                    "type": "Button",
+                    "id": "9a7bcda0-0abb-4a08-8a5d-a205fc71ec6a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "WhiteHole",
+                    "type": "Button",
+                    "id": "818475de-8f09-4454-9842-a3032045e95f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Scroll",
+                    "type": "Value",
+                    "id": "0a348886-9801-43e0-b82c-205fc3036602",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true,
                     "priority": 0
                 }
             ],
@@ -330,6 +370,138 @@
                     "action": "Interact",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8ec2240c-5c3b-4cc6-a63c-30ecf070df9e",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "BlackHole",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d39c6897-90ab-4d61-bf9a-dbc7491a7b85",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "BlackHole",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "371bd8f6-006f-489a-8bb8-2ceaedb1c217",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "WhiteHole",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3633d3ed-4bbe-43ba-89b7-70c2d0e14cea",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "WhiteHole",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4a6bae77-1239-4ece-af37-b1cc2123d115",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ecdd4af9-bbc3-43bf-a2d1-1b4514db7c4c",
+                    "path": "<Gamepad>/start",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9739640e-bd6c-4e91-a972-b81766d003b7",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Scroll",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "2D Vector",
+                    "id": "408433a2-68b5-4865-a19b-fbe2901b16f1",
+                    "path": "2DVector",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Scroll",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "up",
+                    "id": "a1034c2c-5423-47ab-be24-cc183183d2e8",
+                    "path": "<Gamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Scroll",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "down",
+                    "id": "d70f688c-9e99-413e-ad6b-cae43af01478",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Scroll",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "left",
+                    "id": "d4851e31-3be6-421d-8880-610f19962237",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Scroll",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "right",
+                    "id": "5d937bc3-0f65-4316-9f6f-83f43f0313c5",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Scroll",
+                    "isComposite": false,
+                    "isPartOfComposite": true
                 }
             ]
         },

@@ -21,6 +21,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float _moveSpeed;
     [SerializeField]
+    private float _sprintSpeed;
+    [SerializeField]
     private float _moveAcceleration = 20f;
     private Vector2 _moveInput;
 
