@@ -28,8 +28,6 @@ public class WallCutter : MonoBehaviour
     [Tooltip("메시 모드에서 모양으로 쓸 MeshFilter (닫힌 메시, Read/Write Enabled). 비우면 자기 자신의 MeshFilter")]
     [SerializeField] MeshFilter m_cutterMesh;
 
-    Dictionary<Collider, Sliceable> m_sliceTargets = new Dictionary<Collider, Sliceable>();
-
     /// <summary>커터와 겹친 모든 Sliceable 절단.</summary>
     [ContextMenu("Cut Now")]
     public void CutNow()
@@ -120,21 +118,5 @@ public class WallCutter : MonoBehaviour
             Gizmos.matrix = mf.transform.localToWorldMatrix;
             Gizmos.DrawWireMesh(mf.sharedMesh);
         }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other == null)
-            return;
-        if (other.TryGetComponent<Sliceable>(out var slice))
-        {
-            m_sliceTargets.Add(other, slice);
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other == null) return;
-        m_sliceTargets.Remove(other);
     }
 }

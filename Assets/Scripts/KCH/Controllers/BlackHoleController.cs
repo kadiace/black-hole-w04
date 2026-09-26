@@ -1,4 +1,5 @@
 using UnityEngine;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 public class BlackHoleController : MonoBehaviour
 {
@@ -27,8 +28,11 @@ public class BlackHoleController : MonoBehaviour
 
     public System.Action OnRemoved;
 
+    private WallCutter cutter;
+
     void Awake()
     {
+        cutter = _inner.GetComponent<WallCutter>();
         _outer.transform.localScale = Vector3.one;
         _inner.transform.localScale = Vector3.one;
         ParticleSystem.ShapeModule shape = _convergence.shape;
@@ -72,9 +76,11 @@ public class BlackHoleController : MonoBehaviour
             if (t < 1)
                 return;
             _isScaling = false;
-
             if (_scalingType != ScalingType.Shrink)
+            {
+                cutter.CutNow();
                 return;
+            }
             _convergence.gameObject.SetActive(false);
 
             if (_isEliminating)
