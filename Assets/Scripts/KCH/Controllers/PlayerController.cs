@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(GravityController))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IPressable
 {
     [Header("Camera")]
     [SerializeField]
@@ -72,6 +72,10 @@ public class PlayerController : MonoBehaviour
     private Vector3 _up => InInner ? -_gravityController.GravityDir : Vector3.up;
     public bool InInner { get; set; }
 
+    [Header("Interactive")]
+    [SerializeField]
+    private float interactDistance = 5f;
+
 
     [Header("Component")]
     [SerializeField]
@@ -91,6 +95,7 @@ public class PlayerController : MonoBehaviour
         ProcessLookInput();
         ProcessJumpInput();
         ProcessMoveInput();
+        ProcessInteractive();
     }
 
     void FixedUpdate()
@@ -303,4 +308,26 @@ public class PlayerController : MonoBehaviour
         Vector3 right = Vector3.Cross(up, forward).normalized;
         return right * _moveInput.x + forward * _moveInput.y;
     }
+
+    private void ProcessInteractive()
+    {
+        if (!Managers.Input.InteractPressed) return;
+        // 메인 카메라 뷰포트 중앙 기준 레이 발싸!!!!!!!!
+        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+
+        Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, LayerMask.NameToLayer("interactive"), QueryTriggerInteraction.Ignore))
+        {
+            // 타겟 체크
+            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+
+            // 타겟 상호작용 작동
+            if (interactable != null)
+                interactable.Interact();
+
+            return;
+        }
+    }
 }
+
