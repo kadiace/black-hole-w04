@@ -12,7 +12,7 @@ public class MeshMake : MonoBehaviour
     public int zSize = 20;
     public float Divid = 1;
 
-    private void Start()
+    private void Awake()
     {
         m_mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = m_mesh;

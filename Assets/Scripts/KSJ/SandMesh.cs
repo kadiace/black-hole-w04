@@ -5,25 +5,29 @@ public class SandMesh : MonoBehaviour
 {
 
     [Range(1.5f, 5f)]
-    public float radius = 2f;
+    [SerializeField]
+    private float radius = 2f;
     [Range(1.5f, 5f)]
-    public float deformationStength = 2f;
-
-    public float relaxRange = 1;
+    [SerializeField]
+    private float deformationStength = 2f;
+    [SerializeField]
 
     private Mesh m_mesh;
     private Vector3[] m_verticies, m_modifiedVerts;
 
     float m_timer =0;
+    [SerializeField]
+    private float simulateTime = 2;
+    [SerializeField]
+    private int xSize;
+    [SerializeField]
+    private int zSize;
 
-    public float simulateTime = 2;
+    [SerializeField] private float reposeAngle = 30;
 
-    public int xSize;
-    public int zSize;
+    [SerializeField] private float divid;
 
-    public float heightLimit = 4;
-
-
+    [SerializeField] private float flowRate =1;
 
     float[] heightChange;
 
@@ -59,7 +63,7 @@ public class SandMesh : MonoBehaviour
         m_timer += Time.deltaTime;
         if (m_timer >= simulateTime)
         {
-            SandRelaxation(simulateTime);
+            SandRelaxation(m_timer);
             RecalculateMesh();
             m_timer = 0;
         }
@@ -126,40 +130,48 @@ public class SandMesh : MonoBehaviour
         }
     }
 
-    void SandRelaxation(float deltatime)
+    void SandRelaxation(float _deltatime)
     {
-        heightChange = new float[xSize * zSize];
+        heightChange = new float[(xSize+1) * (zSize +1)];
        for(int x=0;x< xSize; x++)
         {
             for(int z=0; z< zSize; z++)
             {
                 int index = z * (xSize + 1) + x;
                 if (x < xSize)
-                    MeshHeightChange(index, index +1);
+                    MeshHeightChange(index, index +1,_deltatime);
                 if (z < zSize)
-                    MeshHeightChange(index, index+ zSize + 1);
+                    MeshHeightChange(index, index+ zSize + 1,_deltatime);
             }
+        }
+
+        for (int i = 0; i < m_modifiedVerts.Length; i++)
+        {
+            m_modifiedVerts[i].y += heightChange[i];
         }
     }
 
-    void MeshHeightChange(int a, int b)
+    void MeshHeightChange(int _a, int _b, float _deltatime)
     {
-        float distance = m_modifiedVerts[a].y - m_modifiedVerts[b].y;
+        float distance = m_modifiedVerts[_a].y - m_modifiedVerts[_b].y;
+        float maxSlope = Mathf.Tan(reposeAngle * Mathf.Deg2Rad);
+        float allowedHeightDifference = maxSlope * 1/divid;
+        float excess = Mathf.Abs(distance) - allowedHeightDifference;
+        float amount = excess  * _deltatime;
 
-
-
-        if (Mathf.Abs( distance) >= heightLimit)
+        amount = Mathf.Min(amount * flowRate, excess / 8);
+        if (excess > 0)
         {
-            if (distance > 0)
-            {
-                m_modifiedVerts[a].y -= distance / 2;
-                m_modifiedVerts[b].y += distance / 2;
-                
-            }
             if (distance < 0)
             {
-                m_modifiedVerts[b].y += distance / 2;
-                m_modifiedVerts[a].y -= distance / 2;
+                heightChange[_a] += amount;
+                heightChange[_b] += -amount;
+                
+            }
+            if (distance > 0)
+            {
+                heightChange[_b] += amount;
+                heightChange[_a] += - amount;
             }
         }
 
