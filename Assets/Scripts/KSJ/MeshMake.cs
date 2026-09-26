@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class MeshMake : MonoBehaviour
 {
@@ -12,11 +11,20 @@ public class MeshMake : MonoBehaviour
     public int xSize = 20;
     public int zSize = 20;
     public float Divid = 1;
+    [SerializeField] private bool usePerlinNoise = true;
+    [SerializeField] private float baseHeight;
 
     private void Awake()
     {
         m_mesh = new Mesh();
-        GetComponent<MeshFilter>().mesh = m_mesh;
+        MeshFilter filter = GetComponent<MeshFilter>();
+        if (filter != null)
+        {
+            if (Application.isPlaying)
+                filter.mesh = m_mesh;
+            else
+                filter.sharedMesh = m_mesh;
+        }
 
         CreateShape();
         UpdateMesh();
@@ -33,7 +41,9 @@ public class MeshMake : MonoBehaviour
             for(int x =0; x <= xSize; x++)
             {
                 //여기에서 y 계산
-                float y = Mathf.PerlinNoise(x * .3f / Divid, z * .3f / Divid) * 2f;
+                float y = usePerlinNoise
+                    ? Mathf.PerlinNoise(x * .3f / Mathf.Max(0.0001f, Divid), z * .3f / Mathf.Max(0.0001f, Divid)) * 2f
+                    : baseHeight;
                 m_vertices[i] = new Vector3(x/Divid, y, z / Divid);
                 i++;
             }
@@ -86,7 +96,32 @@ public class MeshMake : MonoBehaviour
         m_mesh.triangles = m_triangles;
         m_mesh.uv = uvs;
 
+        m_mesh.RecalculateNormals();
         m_mesh.RecalculateBounds();
+    }
+
+    /// <summary>
+    /// Rebuilds a flat mesh for a SandMesh patch created at runtime. Existing
+    /// authored meshes keep their original Perlin-noise path.
+    /// </summary>
+    public void ConfigureRuntime(int runtimeXSize, int runtimeZSize, float cellSize, float runtimeBaseHeight)
+    {
+        xSize = Mathf.Max(1, runtimeXSize);
+        zSize = Mathf.Max(1, runtimeZSize);
+        Divid = cellSize > 0.0001f ? 1f / cellSize : 1f;
+        baseHeight = runtimeBaseHeight;
+        usePerlinNoise = false;
+
+        if (m_mesh == null)
+        {
+            m_mesh = new Mesh();
+            MeshFilter filter = GetComponent<MeshFilter>();
+            if (filter != null)
+                filter.mesh = m_mesh;
+        }
+
+        CreateShape();
+        UpdateMesh();
     }
 
     private void OnDrawGizmos()
