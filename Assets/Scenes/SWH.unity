@@ -838,8 +838,16 @@ MonoBehaviour:
   sphereMeshSource: {fileID: 484018127}
   particleMaterial: {fileID: 2100000, guid: 3f535682bb0b70246b56b3e312b696c2, type: 2}
   integrationShader: {fileID: 7200000, guid: f955c9991e001e84fa0a2a9b9c6adf5d, type: 3}
+  spatialGridShader: {fileID: 7200000, guid: 07fe9f8667d4bb042828195ecb280d42, type: 3}
+  macGridShader: {fileID: 7200000, guid: 9266f02fd15b6314ca6e5541f5c0c227, type: 3}
   gravity: -9.81
   collisionRadius: 0.08
+  initialVelocity: {x: 0, y: 0, z: 0}
+  wallHalfExtent: 4
+  wallBounce: 0.5
+  restDensity: 400
+  pressureStiffness: 0.2
+  viscosityStrength: 2
 --- !u!1 &1305325144
 GameObject:
   m_ObjectHideFlags: 0

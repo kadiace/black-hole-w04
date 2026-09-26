@@ -1,0 +1,257 @@
+#pragma kernel AssignCells
+#pragma kernel ClearCells
+#pragma kernel BuildCellLists
+#pragma kernel CountNeighbors
+#pragma kernel ApplyPressure
+#pragma kernel ComputeViscosity
+
+StructuredBuffer<float4> _Positions;
+RWStructuredBuffer<int> _ParticleCell;
+RWStructuredBuffer<int> _CellCounts;
+RWStructuredBuffer<int> _CellParticleIndices;
+RWStructuredBuffer<int> _ParticleNeighborCounts;
+RWStructuredBuffer<float> _ParticleDensities;
+RWStructuredBuffer<float> _ParticlePressures;
+RWStructuredBuffer<float4> _Velocities;
+RWStructuredBuffer<float4> _ViscosityAccelerations;
+
+int _ParticleCount;
+int _GridX;
+int _GridY;
+int _GridZ;
+int _CellCapacity;
+int _GridCellCount;
+float3 _GridMin;
+float _CellSize;
+float _NeighborRadius;
+float _ParticleMass;
+float _RestDensity;
+float _PressureStiffness;
+float _DeltaTime;
+float _ViscosityStrength;
+
+// 셀 번호 계산
+[numthreads(64, 1, 1)]
+void AssignCells(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    int3 cell = (int3) floor((_Positions[i].xyz - _GridMin) / _CellSize);
+    cell = clamp(cell, int3(0, 0, 0), int3(_GridX - 1, _GridY - 1, _GridZ - 1));
+
+    _ParticleCell[i] = cell.x + _GridX * (cell.y + _GridY * cell.z);
+}
+
+// 셀 인원수 초기화
+[numthreads(64, 1, 1)]
+void ClearCells(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _GridCellCount)
+    {
+        return;
+    }
+    _CellCounts[id.x] = 0;
+}
+
+// 셀별 입자 목록 작성
+[numthreads(64, 1, 1)]
+void BuildCellLists(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _ParticleCount)
+        return;
+
+    int cell = _ParticleCell[i];
+    int slot;
+    InterlockedAdd(_CellCounts[cell], 1, slot);
+
+    if (slot < _CellCapacity)
+    {
+        _CellParticleIndices[cell * _CellCapacity + slot] = (int) i;
+    }
+}
+
+// 주변 입자 수 계산
+[numthreads(64, 1, 1)]
+void CountNeighbors(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    int ownCell = _ParticleCell[i];
+    int3 center = int3(ownCell % _GridX, (ownCell / _GridX) % _GridY, ownCell / (_GridX * _GridY));
+
+    float3 position = _Positions[i].xyz;
+    float radiusSquared = _NeighborRadius * _NeighborRadius;
+    int neighborCount = 0;
+    
+    float h3 = _NeighborRadius * radiusSquared;
+    float h9 = h3 * h3 * h3;
+    float poly6 = 315.0 / (64.0 * 3.14159265 * h9);
+    float density = 0.0;
+
+    for (int z = -1; z <= 1; z++)
+        for (int y = -1; y <= 1; y++)
+            for (int x = -1; x <= 1; x++)
+            {
+                int3 cell = center + int3(x, y, z);
+                if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+                {
+                    continue;
+                }
+
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                int candidates = min(_CellCounts[cellIndex], _CellCapacity);
+
+                for (int slot = 0; slot < candidates; slot++)
+                {
+                    int other = _CellParticleIndices[cellIndex * _CellCapacity + slot];
+                    float3 delta = _Positions[other].xyz - position;
+                    float distanceSquared = dot(delta, delta);
+
+                    if (distanceSquared < radiusSquared)
+                    {
+                        if (other != (int) i)
+                        {
+                            neighborCount++;
+                        }
+
+                        float difference = radiusSquared - distanceSquared;
+                        density += _ParticleMass * poly6 * difference * difference * difference;
+                    }
+                }
+            }
+
+    _ParticleNeighborCounts[i] = neighborCount;
+    _ParticleDensities[i] = density;
+    _ParticlePressures[i] = _PressureStiffness * max(density - _RestDensity, 0.0);
+}
+
+// 압력으로 속도 변경
+[numthreads(64, 1, 1)]
+void ApplyPressure(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[i].xyz;
+    int3 center = (int3) floor((position - _GridMin) / _CellSize);
+    center = clamp(center, int3(0, 0, 0), int3(_GridX - 1, _GridY - 1, _GridZ - 1));
+
+    float densityI = max(_ParticleDensities[i], 0.0001);
+    float pressureI = _ParticlePressures[i];
+    float h = _NeighborRadius;
+    float h3 = h * h * h;
+    float gradientScale = 45.0 / (3.14159265 * h3 * h3);
+    float3 acceleration = float3(0, 0, 0);
+
+    for (int z = -1; z <= 1; z++)
+        for (int y = -1; y <= 1; y++)
+            for (int x = -1; x <= 1; x++)
+            {
+                int3 cell = center + int3(x, y, z);
+                if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+                {
+                    continue;
+                }
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                int candidates = min(_CellCounts[cellIndex], _CellCapacity);
+
+                for (int slot = 0; slot < candidates; slot++)
+                {
+                    int other = _CellParticleIndices[cellIndex * _CellCapacity + slot];
+                    if (other == (int) i)
+                    {
+                        continue;
+                    }
+
+                    float3 delta = position - _Positions[other].xyz;
+                    float distance = length(delta);
+                    if (distance < 0.00001 || distance >= h)
+                    {
+                        continue;
+                    }
+
+                    float densityJ = max(_ParticleDensities[other], 0.0001);
+                    float pairPressure = (pressureI + _ParticlePressures[other]) / (2.0 * densityI * densityJ);
+
+                    float remaining = h - distance;
+                    acceleration += _ParticleMass * pairPressure * gradientScale * remaining * remaining * (delta / distance);
+                }
+            }
+
+    float4 velocity = _Velocities[i];
+    velocity.xyz += (acceleration + _ViscosityAccelerations[i].xyz) * _DeltaTime;
+    _Velocities[i] = velocity;
+}
+
+// 이웃과의 속도 차이 계산
+[numthreads(64, 1, 1)]
+void ComputeViscosity(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[i].xyz;
+    float3 velocity = _Velocities[i].xyz;
+    int3 center = (int3) floor((position - _GridMin) / _CellSize);
+    center = clamp(center, int3(0, 0, 0), int3(_GridX - 1, _GridY - 1, _GridZ - 1));
+
+    float h = _NeighborRadius;
+    float h2 = h * h;
+    float h3 = h2 * h;
+    float kernelScale = 45.0 / (3.14159265 * h3 * h3);
+    float densityI = max(_ParticleDensities[i], 0.0001);
+    float3 sum = float3(0, 0, 0);
+
+    for (int z = -1; z <= 1; z++)
+        for (int y = -1; y <= 1; y++)
+            for (int x = -1; x <= 1; x++)
+            {
+                int3 cell = center + int3(x, y, z);
+                if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+                {
+                    continue;
+                }
+
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                int candidates = min(_CellCounts[cellIndex], _CellCapacity);
+
+                for (int slot = 0; slot < candidates; slot++)
+                {
+                    int other = _CellParticleIndices[cellIndex * _CellCapacity + slot];
+                    if (other == (int) i)
+                    {
+                        continue;
+                    }
+
+                    float3 delta = position - _Positions[other].xyz;
+                    float distanceSquared = dot(delta, delta);
+                    if (distanceSquared >= h2)
+                    {
+                        continue;
+                    }
+
+                    float distance = sqrt(distanceSquared);
+                    float densityJ = max(_ParticleDensities[other], 0.0001);
+                    float weight = kernelScale * (h - distance);
+
+                    sum += _ParticleMass * (_Velocities[other].xyz - velocity) * (weight / densityJ);
+                }
+            }
+
+    _ViscosityAccelerations[i] = float4(_ViscosityStrength * sum / densityI, 0);
+}

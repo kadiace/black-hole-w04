@@ -1,14 +1,19 @@
 #pragma kernel Integrate
 
+// 입자 버퍼
 RWStructuredBuffer<float4> _Positions;
 RWStructuredBuffer<float4> _Velocities;
 
+// 계산 설정
 int _ParticleCount;
 float _DeltaTime;
 float _Gravity;
 float _FloorY;
 float _CollisionRadius;
+float _WallHalfExtent;
+float _WallBounce;
 
+// 입자 갱신
 [numthreads(64, 1, 1)]
 void Integrate(uint3 id : SV_DispatchThreadID)
 {
@@ -18,9 +23,11 @@ void Integrate(uint3 id : SV_DispatchThreadID)
     float3 position = _Positions[i].xyz;
     float3 velocity = _Velocities[i].xyz;
 
+    // 중력 이동
     velocity.y += _Gravity * _DeltaTime;
     position += velocity * _DeltaTime;
 
+    // 바닥 충돌
     float lowestCenter = _FloorY + _CollisionRadius;
     if (position.y < lowestCenter)
     {
@@ -28,6 +35,32 @@ void Integrate(uint3 id : SV_DispatchThreadID)
         velocity.y = 0;
     }
 
+    // 벽 충돌
+    float wallLimit = _WallHalfExtent - _CollisionRadius;
+
+    if (position.x > wallLimit)
+    {
+        position.x = wallLimit;
+        velocity.x = -abs(velocity.x) * _WallBounce;
+    }
+    else if (position.x < -wallLimit)
+    {
+        position.x = -wallLimit;
+        velocity.x = abs(velocity.x) * _WallBounce;
+    }
+
+    if (position.z > wallLimit)
+    {
+        position.z = wallLimit;
+        velocity.z = -abs(velocity.z) * _WallBounce;
+    }
+    else if (position.z < -wallLimit)
+    {
+        position.z = -wallLimit;
+        velocity.z = abs(velocity.z) * _WallBounce;
+    }
+
+    // 결과 저장
     _Positions[i] = float4(position, 1);
     _Velocities[i] = float4(velocity, 0);
 }

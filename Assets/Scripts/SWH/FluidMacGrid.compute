@@ -1,0 +1,225 @@
+#pragma kernel ClearFaces
+#pragma kernel ParticleToV
+#pragma kernel ParticleToU
+#pragma kernel ParticleToW
+#pragma kernel NormalizeFaces
+
+RWStructuredBuffer<float2> _UFaceData;
+RWStructuredBuffer<float2> _VFaceData;
+RWStructuredBuffer<float2> _WFaceData;
+StructuredBuffer<float4> _Positions;
+StructuredBuffer<float4> _Velocities;
+StructuredBuffer<int> _CellCounts;
+StructuredBuffer<int> _CellParticleIndices;
+
+int _GridX;
+int _GridY;
+int _GridZ;
+int _CellCapacity;
+float3 _GridMin;
+float _CellSize;
+int _UFaceCount;
+int _VFaceCount;
+int _WFaceCount;
+
+// 면 데이터 초기화
+[numthreads(64, 1, 1)]
+void ClearFaces(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i < (uint) _UFaceCount)
+    {
+        _UFaceData[i] = float2(0, 0);
+    }
+    if (i < (uint) _VFaceCount)
+    {
+        _VFaceData[i] = float2(0, 0);
+    }
+    if (i < (uint) _WFaceCount)
+    {
+        _WFaceData[i] = float2(0, 0);
+    }
+}
+
+// 입자 속도를 V면에 전달
+[numthreads(64, 1, 1)]
+void ParticleToV(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+    if (index >= (uint) _VFaceCount)
+    {
+        return;
+    }
+
+    uint gx = (uint) _GridX;
+    uint gy = (uint) (_GridY + 1);
+    uint x = index % gx;
+    uint y = (index / gx) % gy;
+    uint z = index / (gx * gy);
+
+    float3 facePosition = _GridMin + float3((float) x + 0.5, (float) y, (float) z + 0.5) * _CellSize;
+
+    int3 center = (int3) floor((facePosition - _GridMin) / _CellSize);
+    center = clamp(center, int3(0, 0, 0), int3(_GridX - 1, _GridY - 1, _GridZ - 1));
+
+    float velocitySum = 0;
+    float weightSum = 0;
+
+    for (int dz = -1; dz <= 1; dz++)
+        for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int3 cell = center + int3(dx, dy, dz);
+                if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+                {
+                    continue;
+                }
+
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                int count = min(_CellCounts[cellIndex], _CellCapacity);
+
+                for (int slot = 0; slot < count; slot++)
+                {
+                    int particle = _CellParticleIndices[cellIndex * _CellCapacity + slot];
+                    float3 distance = abs(_Positions[particle].xyz - facePosition);
+                    float3 axisWeight = saturate(1.0 - distance / _CellSize);
+                    float weight = axisWeight.x * axisWeight.y * axisWeight.z;
+
+                    velocitySum += weight * _Velocities[particle].y;
+                    weightSum += weight;
+                }
+            }
+
+    _VFaceData[index] = float2(velocitySum, weightSum);
+}
+
+// 입자 속도를 U면에 전달
+[numthreads(64, 1, 1)]
+void ParticleToU(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+    if (index >= (uint) _UFaceCount)
+    {
+        return;
+    }
+
+    uint gx = (uint) (_GridX + 1);
+    uint gy = (uint) _GridY;
+    uint x = index % gx;
+    uint y = (index / gx) % gy;
+    uint z = index / (gx * gy);
+
+    float3 facePosition = _GridMin + float3((float) x, (float) y + 0.5, (float) z + 0.5) * _CellSize;
+
+    int3 center = (int3) floor((facePosition - _GridMin) / _CellSize);
+    center = clamp(center, int3(0, 0, 0), int3(_GridX - 1, _GridY - 1, _GridZ - 1));
+
+    float velocitySum = 0;
+    float weightSum = 0;
+
+    for (int dz = -1; dz <= 1; dz++)
+        for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int3 cell = center + int3(dx, dy, dz);
+                if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+                {
+                    continue;
+                }
+
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                int count = min(_CellCounts[cellIndex], _CellCapacity);
+
+                for (int slot = 0; slot < count; slot++)
+                {
+                    int particle = _CellParticleIndices[cellIndex * _CellCapacity + slot];
+                    float3 distance = abs(_Positions[particle].xyz - facePosition);
+                    float3 axisWeight = saturate(1.0 - distance / _CellSize);
+                    float weight = axisWeight.x * axisWeight.y * axisWeight.z;
+
+                    velocitySum += weight * _Velocities[particle].x;
+                    weightSum += weight;
+                }
+            }
+
+    _UFaceData[index] = float2(velocitySum, weightSum);
+}
+
+// 입자 속도를 W면에 전달
+[numthreads(64, 1, 1)]
+void ParticleToW(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+    if (index >= (uint) _WFaceCount)
+    {
+        return;
+    }
+
+    uint gx = (uint) _GridX;
+    uint gy = (uint) _GridY;
+    uint x = index % gx;
+    uint y = (index / gx) % gy;
+    uint z = index / (gx * gy);
+
+    float3 facePosition = _GridMin + float3((float) x + 0.5, (float) y + 0.5, (float) z) * _CellSize;
+
+    int3 center = (int3) floor((facePosition - _GridMin) / _CellSize);
+    center = clamp(center, int3(0, 0, 0), int3(_GridX - 1, _GridY - 1, _GridZ - 1));
+
+    float velocitySum = 0;
+    float weightSum = 0;
+
+    for (int dz = -1; dz <= 1; dz++)
+        for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int3 cell = center + int3(dx, dy, dz);
+                if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+                {
+                    continue;
+                }
+
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                int count = min(_CellCounts[cellIndex], _CellCapacity);
+
+                for (int slot = 0; slot < count; slot++)
+                {
+                    int particle = _CellParticleIndices[cellIndex * _CellCapacity + slot];
+
+                    float3 distance = abs(_Positions[particle].xyz - facePosition);
+                    float3 axisWeight = saturate(1.0 - distance / _CellSize);
+                    float weight = axisWeight.x * axisWeight.y * axisWeight.z;
+
+                    velocitySum += weight * _Velocities[particle].z;
+                    weightSum += weight;
+                }
+            }
+
+    _WFaceData[index] = float2(velocitySum, weightSum);
+}
+
+float2 NormalizeFace(float2 face)
+{
+    if (face.y > 0.000001)
+        face.x /= face.y;
+    else
+        face = float2(0, 0);
+
+    return face;
+}
+
+// 면 속도 정규화
+[numthreads(64, 1, 1)]
+void NormalizeFaces(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+
+    if (i < (uint) _UFaceCount)
+        _UFaceData[i] = NormalizeFace(_UFaceData[i]);
+
+    if (i < (uint) _VFaceCount)
+        _VFaceData[i] = NormalizeFace(_VFaceData[i]);
+
+    if (i < (uint) _WFaceCount)
+        _WFaceData[i] = NormalizeFace(_WFaceData[i]);
+}

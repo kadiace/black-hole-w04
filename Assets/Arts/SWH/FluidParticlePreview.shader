@@ -1,11 +1,13 @@
 Shader "Fluid/ParticlePreview"
 {
+    // 재질 설정
     Properties
     {
         _BaseColor ("Color", Color) = (0.1, 0.6, 1, 1)
         _Radius ("Radius", Range(0.01, 0.2)) = 0.08
     }
 
+    // 입자 렌더링
     SubShader
     {
         Tags { "RenderPipeline" = "UniversalPipeline" "RenderType" = "Opaque" }
@@ -21,6 +23,7 @@ Shader "Fluid/ParticlePreview"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            // 위치 버퍼
             StructuredBuffer<float4> _Positions;
 
             CBUFFER_START(UnityPerMaterial)
@@ -41,6 +44,7 @@ Shader "Fluid/ParticlePreview"
                 float3 normalWS : TEXCOORD0;
             };
 
+            // 정점 배치
             Varyings Vert(Attributes input)
             {
                 Varyings output;
@@ -51,6 +55,7 @@ Shader "Fluid/ParticlePreview"
                 return output;
             }
 
+            // 색상 출력
             half4 Frag(Varyings input) : SV_Target
             {
                 float light = saturate(dot(normalize(input.normalWS), normalize(float3(0.4, 0.8, -0.5))));
