@@ -6,6 +6,9 @@ public class GravityManager
     public BlackHoleController BlackHole { get; set; }
     public WhiteHoleController WhiteHole { get; set; }
 
+    public bool IsBlackHoleEnabled => BlackHole.gameObject.activeSelf;
+    public bool IsWhiteHoleEnabled => WhiteHole.gameObject.activeSelf;
+
     public GameObject LoadBlackHole => Resources.Load<GameObject>("KCH/Prefabs/BlackHole");
     public GameObject LoadWhiteHole => Resources.Load<GameObject>("KCH/Prefabs/WhiteHole");
 

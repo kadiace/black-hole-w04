@@ -66,7 +66,7 @@ public class BlackHoleController : MonoBehaviour
         _outer.transform.localScale = Vector3.zero;
         _inner.transform.localScale = Vector3.zero;
         _timer = _time;
-        SetActive(Managers.Gravity.WhiteHole == null ? false : Managers.Gravity.WhiteHole.gameObject.activeSelf);
+        SetActive(Managers.Gravity.WhiteHole == null ? false : Managers.Gravity.IsWhiteHoleEnabled);
     }
 
     public void SetActive(bool isActivated)

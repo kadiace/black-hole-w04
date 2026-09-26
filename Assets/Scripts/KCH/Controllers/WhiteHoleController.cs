@@ -13,7 +13,7 @@ public class WhiteHoleController : MonoBehaviour
 
     void OnEnable()
     {
-        SetActive(Managers.Gravity.BlackHole == null ? false : Managers.Gravity.BlackHole.gameObject.activeSelf);
+        SetActive(Managers.Gravity.BlackHole == null ? false : Managers.Gravity.IsBlackHoleEnabled);
     }
 
     public void SetActive(bool isActivated)
