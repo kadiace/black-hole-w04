@@ -1,5 +1,4 @@
 using UnityEngine;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 public class BlackHoleController : MonoBehaviour
 {
@@ -22,8 +21,8 @@ public class BlackHoleController : MonoBehaviour
     private bool _isScaling;
     private ScalingType _scalingType;
     private float _scalingElapsed;
-    private (float, float) _startScale;
-    private (float, float) _targetScale;
+    private (float, float, float) _startScale;
+    private (float, float, float) _targetScale;
     private bool _isEliminating;
 
     public System.Action OnRemoved;
@@ -33,8 +32,9 @@ public class BlackHoleController : MonoBehaviour
     void Awake()
     {
         cutter = _inner.GetComponent<WallCutter>();
-        _outer.transform.localScale = Vector3.one;
-        _inner.transform.localScale = Vector3.one;
+        _outer.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
+        _inner.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
+        _eventHorizon.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         ParticleSystem.ShapeModule shape = _convergence.shape;
         shape.scale = Vector3.one;
         ParticleSystem.MainModule main = _convergence.main;
@@ -60,14 +60,16 @@ public class BlackHoleController : MonoBehaviour
 
             t = Mathf.Pow(t, 20f);
 
-            (float startOuterScale, float startInnerScale) = _startScale;
-            (float targetOuterScale, float targetInnerScale) = _targetScale;
+            (float startOuterScale, float startInnerScale, float startEventHorizonScale) = _startScale;
+            (float targetOuterScale, float targetInnerScale, float targetEventHorizonScale) = _targetScale;
 
             float outerScale = Mathf.Lerp(startOuterScale, targetOuterScale, t);
             float innerScale = Mathf.Lerp(startInnerScale, targetInnerScale, t);
+            float eventHorizonScale = Mathf.Lerp(startEventHorizonScale, targetEventHorizonScale, t);
 
             _outer.transform.localScale = outerScale * Vector3.one;
             _inner.transform.localScale = innerScale * Vector3.one;
+            _eventHorizon.transform.localScale = eventHorizonScale * Vector3.one;
             ParticleSystem.ShapeModule shape = _convergence.shape;
             shape.scale = innerScale * Vector3.one;
             ParticleSystem.MainModule main = _convergence.main;
@@ -92,8 +94,9 @@ public class BlackHoleController : MonoBehaviour
     {
         _isEliminating = false;
         _isScaling = false;
-        _outer.transform.localScale = Vector3.one;
-        _inner.transform.localScale = Vector3.one;
+        _outer.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
+        _inner.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
+        _eventHorizon.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         ParticleSystem.ShapeModule shape = _convergence.shape;
         shape.scale = Vector3.one;
         ParticleSystem.MainModule main = _convergence.main;
@@ -107,8 +110,9 @@ public class BlackHoleController : MonoBehaviour
     {
         _isScaling = true;
         _scalingType = isActivated ? ScalingType.Expand : ScalingType.Shrink;
-        _startScale = (_outer.transform.localScale.x, _inner.transform.localScale.x);
-        _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale) : (1f, 1f);
+        _startScale = (_outer.transform.localScale.x, _inner.transform.localScale.x, _eventHorizon.transform.localScale.x);
+        _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale, Managers.Gravity.GravityStat.EventHorizonScale) :
+            (Managers.Gravity.GravityStat.InitScale, Managers.Gravity.GravityStat.InitScale, Managers.Gravity.GravityStat.InitScale);
         _scalingElapsed = 0f;
         if (isActivated)
             _convergence.gameObject.SetActive(true);

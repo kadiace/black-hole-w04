@@ -17,8 +17,14 @@ public class GravityStat : ScriptableObject
     [SerializeField]
     private float _innerScale;
     [SerializeField]
+    private float _eventHorizonScale;
+    [SerializeField]
+    private float _initScale;
+    [SerializeField]
     private float _duration;
     public float OuterScale => _outerScale;
     public float InnerScale => _innerScale;
+    public float EventHorizonScale => _eventHorizonScale;
+    public float InitScale => _initScale;
     public float Duration => _duration;
 }
