@@ -274,7 +274,7 @@ MonoBehaviour:
   _renderer: {fileID: 179252078669035105}
   _onMaterial: {fileID: 2100000, guid: c88fa2aeb6a84bf449bf2b8c50dd3de1, type: 2}
   _offMaterial: {fileID: 2100000, guid: 53ede76edde2c9546a09bc542d104e9e, type: 2}
-  _emission: {fileID: 9006829742927055558}
+  _emission: {fileID: 9219686467785724924}
 --- !u!1 &9006829742927055558
 GameObject:
   m_ObjectHideFlags: 0

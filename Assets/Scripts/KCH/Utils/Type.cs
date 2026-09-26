@@ -6,4 +6,8 @@ public enum HoleType
     White,
 }
 
-
+public enum ScalingType
+{
+    Expand,
+    Shrink,
+}

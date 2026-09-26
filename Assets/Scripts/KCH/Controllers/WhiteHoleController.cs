@@ -9,7 +9,7 @@ public class WhiteHoleController : MonoBehaviour
     [SerializeField]
     private Material _offMaterial;
     [SerializeField]
-    private GameObject _emission;
+    private ParticleSystem _emission;
 
     void OnEnable()
     {
@@ -19,10 +19,10 @@ public class WhiteHoleController : MonoBehaviour
     public void SetActive(bool isActivated)
     {
         _renderer.sharedMaterial = isActivated ? _onMaterial : _offMaterial;
-        _emission.SetActive(isActivated);
+        _emission.gameObject.SetActive(isActivated);
     }
 
-    public void Deactivate()
+    public void Eliminate()
     {
         gameObject.SetActive(false);
         Managers.Gravity.BlackHole.SetActive(false);
