@@ -27,8 +27,8 @@ public class BlackHoleController : MonoBehaviour
 
     void Awake()
     {
-        _outer.transform.localScale = Vector3.zero;
-        _inner.transform.localScale = Vector3.zero;
+        _outer.transform.localScale = Vector3.one;
+        _inner.transform.localScale = Vector3.one;
 
         _outer.OnTriggerEntered += OuterEnter;
         _inner.OnTriggerEntered += InnerEnter;
@@ -47,7 +47,7 @@ public class BlackHoleController : MonoBehaviour
         {
             _scalingElapsed += Time.deltaTime;
             float t = Mathf.Clamp01(_scalingElapsed / _scalingDuration);
-            t = Mathf.Pow(t, 3f);
+            t = Mathf.Pow(t, 20f);
 
             (float startOuterScale, float startInnerScale) = _startScale;
             (float targetOuterScale, float targetInnerScale) = _targetScale;
@@ -63,8 +63,8 @@ public class BlackHoleController : MonoBehaviour
     void OnEnable()
     {
         _isScaling = false;
-        _outer.transform.localScale = Vector3.zero;
-        _inner.transform.localScale = Vector3.zero;
+        _outer.transform.localScale = Vector3.one;
+        _inner.transform.localScale = Vector3.one;
         _timer = _time;
         SetActive(Managers.Gravity.WhiteHole == null ? false : Managers.Gravity.IsWhiteHoleEnabled);
     }
@@ -73,7 +73,7 @@ public class BlackHoleController : MonoBehaviour
     {
         _isScaling = true;
         _startScale = (_outer.transform.localScale.x, _inner.transform.localScale.x);
-        _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale) : (0f, 0f);
+        _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale) : (1f, 1f);
         _scalingElapsed = 0f;
         _convergence.SetActive(isActivated);
     }
