@@ -166,7 +166,7 @@ ParticleSystem:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3927930100773255628}
   serializedVersion: 8
-  lengthInSec: 5
+  lengthInSec: 1
   simulationSpeed: 5
   stopAction: 0
   cullingMode: 0
@@ -797,7 +797,7 @@ ParticleSystem:
     donutRadius: 0.2
     m_Position: {x: 0, y: 0, z: 0}
     m_Rotation: {x: 0, y: 0, z: 0}
-    m_Scale: {x: 1, y: 1, z: 1}
+    m_Scale: {x: 30, y: 30, z: 30}
     placementMode: 0
     m_MeshMaterialIndex: 0
     m_MeshNormalOffset: 0
@@ -876,7 +876,7 @@ ParticleSystem:
     sphericalDirectionAmount: 0
     randomPositionAmount: 0
     radius:
-      value: 20
+      value: 1
       mode: 0
       spread: 0
       speed:
@@ -5013,9 +5013,9 @@ MonoBehaviour:
   _outer: {fileID: 6384318960417197918}
   _inner: {fileID: 2714715765434294354}
   _eventHorizon: {fileID: 7467340482293468}
-  _convergence: {fileID: 3927930100773255628}
+  _convergence: {fileID: 2961545901775811512}
   _time: 10
-  _scalingDuration: 2
+  _scalingDuration: 1
 --- !u!1 &8573554814364048347
 GameObject:
   m_ObjectHideFlags: 0
