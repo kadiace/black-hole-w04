@@ -15,6 +15,8 @@ public class SandMesh : MonoBehaviour
     private Mesh m_mesh;
     private Vector3[] m_verticies, m_modifiedVerts;
 
+    private Vector2[] m_flowDirections;
+
     float m_timer =0;
     [SerializeField]
     private float simulateTime = 2;
@@ -37,15 +39,18 @@ public class SandMesh : MonoBehaviour
         m_mesh = GetComponentInChildren<MeshFilter>().mesh;
         m_verticies = m_mesh.vertices;
         m_modifiedVerts = m_mesh.vertices;
-
+        m_flowDirections = new Vector2[m_verticies.Length];
         
     }
 
     void RecalculateMesh()
     {
         m_mesh.vertices = m_modifiedVerts;
+        m_mesh.uv2 = m_flowDirections;
         GetComponentInChildren<MeshCollider>().sharedMesh = m_mesh;
         m_mesh.RecalculateNormals();
+
+        
     }
 
     private void Update()
@@ -132,6 +137,7 @@ public class SandMesh : MonoBehaviour
 
     void SandRelaxation(float _deltatime)
     {
+        System.Array.Clear(m_flowDirections,0,m_flowDirections.Length);
         heightChange = new float[(xSize+1) * (zSize +1)];
        for(int x=0;x< xSize; x++)
         {
@@ -139,9 +145,9 @@ public class SandMesh : MonoBehaviour
             {
                 int index = z * (xSize + 1) + x;
                 if (x < xSize)
-                    MeshHeightChange(index, index +1,_deltatime);
+                    MeshHeightChange(index, index +1,_deltatime,Vector2.right);
                 if (z < zSize)
-                    MeshHeightChange(index, index+ zSize + 1,_deltatime);
+                    MeshHeightChange(index, index+ zSize + 1,_deltatime,Vector2.up);
             }
         }
 
@@ -149,9 +155,15 @@ public class SandMesh : MonoBehaviour
         {
             m_modifiedVerts[i].y += heightChange[i];
         }
+
+        for (int i = 0; i < m_flowDirections.Length; i++)
+        {
+            if (m_flowDirections[i].sqrMagnitude > 0.000001f)
+                m_flowDirections[i].Normalize();
+        }
     }
 
-    void MeshHeightChange(int _a, int _b, float _deltatime)
+    void MeshHeightChange(int _a, int _b, float _deltatime, Vector2 direction)
     {
         float distance = m_modifiedVerts[_a].y - m_modifiedVerts[_b].y;
         float maxSlope = Mathf.Tan(reposeAngle * Mathf.Deg2Rad);
@@ -166,12 +178,17 @@ public class SandMesh : MonoBehaviour
             {
                 heightChange[_a] += amount;
                 heightChange[_b] += -amount;
+
+
+                m_flowDirections[_b] += -direction * amount;
                 
             }
             if (distance > 0)
             {
                 heightChange[_b] += amount;
                 heightChange[_a] += - amount;
+
+                m_flowDirections[_a] += direction * amount;
             }
         }
 

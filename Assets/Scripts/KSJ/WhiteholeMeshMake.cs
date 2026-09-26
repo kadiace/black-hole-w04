@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class MeshMake : MonoBehaviour
+public class WhiteholeMeshMake : MonoBehaviour
 {
     Mesh m_mesh;
 
