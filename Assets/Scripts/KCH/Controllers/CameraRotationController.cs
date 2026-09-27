@@ -10,15 +10,19 @@ public class CameraRotationController : MonoBehaviour
     [SerializeField]
     private Transform _cameraTarget;
 
-    [Header("Gravity Rotation")]
+    [Header("Rotation")]
     [SerializeField]
-    private float _gravityRotationDamping = 5f;
+    private float _gravityRotationDamping = 1f;
+    [SerializeField]
+    private float _yawRotationDamping = 0.1f;
 
     private Quaternion _gravityRotation;
+    private Quaternion _yawRotation;
 
     void Awake()
     {
         _gravityRotation = _playerController.BaseRotation;
+        _yawRotation = Quaternion.AngleAxis(_playerController.Yaw, _gravityRotation * Vector3.up);
     }
 
     private void LateUpdate()
@@ -27,10 +31,11 @@ public class CameraRotationController : MonoBehaviour
         float t = 1f - Mathf.Exp(-Time.deltaTime / _gravityRotationDamping);
         _gravityRotation = Quaternion.Slerp(_gravityRotation, targetGravityRotation, t);
 
-        Vector3 yawAxis = _gravityRotation * Vector3.up;
-        Quaternion yawRotation = Quaternion.AngleAxis(_playerController.Yaw, yawAxis);
+        Quaternion targetYawRotation = Quaternion.AngleAxis(_playerController.Yaw, _gravityRotation * Vector3.up);
+        float u = 1f - Mathf.Exp(-Time.deltaTime / _yawRotationDamping);
+        _yawRotation = Quaternion.Slerp(_yawRotation, targetYawRotation, u);
 
-        transform.rotation = yawRotation * _gravityRotation * _cameraTarget.localRotation;
+
+        transform.rotation = _yawRotation * _gravityRotation * _cameraTarget.localRotation;
     }
 }
-

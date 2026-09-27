@@ -1,0 +1,644 @@
+#pragma kernel ClearFaces
+#pragma kernel ParticleToU
+#pragma kernel ParticleToV
+#pragma kernel ParticleToW
+#pragma kernel NormalizeFaces
+#pragma kernel ClassifyCells
+#pragma kernel ApplyBoundaries
+#pragma kernel SaveFaces
+#pragma kernel ComputeDivergence
+#pragma kernel JacobiA
+#pragma kernel JacobiB
+#pragma kernel ProjectFaces
+#pragma kernel GridToParticles
+
+RWStructuredBuffer<float2> _UFaceData;
+RWStructuredBuffer<float2> _VFaceData;
+RWStructuredBuffer<float2> _WFaceData;
+RWStructuredBuffer<float2> _OldUFaceData;
+RWStructuredBuffer<float2> _OldVFaceData;
+RWStructuredBuffer<float2> _OldWFaceData;
+
+StructuredBuffer<float4> _Positions;
+RWStructuredBuffer<float4> _Velocities;
+StructuredBuffer<int4> _TileHash;
+StructuredBuffer<int4> _TileCoordinates;
+StructuredBuffer<int> _CellCounts;
+StructuredBuffer<int> _CellHeads;
+StructuredBuffer<int> _ParticleNext;
+StructuredBuffer<float> _ObstacleSdf;
+
+RWStructuredBuffer<int> _CellStates;
+RWStructuredBuffer<float> _Divergence;
+RWStructuredBuffer<float> _PressureA;
+RWStructuredBuffer<float> _PressureB;
+
+int _ParticleCount;
+int _GridCellCount;
+int _FaceCount;
+int _TileHashCapacity;
+int _PressureIsA;
+float _CellSize;
+float _DeltaTime;
+float _FlipRatio;
+float _MaxSpeed;
+float _VelocityDamping;
+float _TargetParticlesPerCell;
+float _VolumeCorrectionRate;
+
+static const int CellsPerTile = 8;
+static const int CellCountPerTile = 512;
+static const int FaceCountPerTile = 576;
+
+// 활성 타일 검색
+int FindTileIndex(int3 tile)
+{
+    if (_TileHashCapacity <= 0)
+    {
+        return -1;
+    }
+
+    uint hash = ((uint) tile.x * 73856093u) ^ ((uint) tile.y * 19349663u) ^ ((uint) tile.z * 83492791u);
+    hash ^= hash >> 16;
+
+    uint mask = (uint) (_TileHashCapacity - 1);
+    uint slot = hash & mask;
+
+    for (int probe = 0; probe < _TileHashCapacity; probe++)
+    {
+        int4 entry = _TileHash[slot];
+
+        if (entry.w < 0)
+        {
+            return -1;
+        }
+
+        if (entry.x == tile.x && entry.y == tile.y && entry.z == tile.z)
+        {
+            return entry.w;
+        }
+
+        slot = (slot + 1u) & mask;
+    }
+
+    return -1;
+}
+
+// 월드 셀 주소
+int WorldCellToIndex(int3 worldCell)
+{
+    int3 local = worldCell & int3(7, 7, 7);
+    int3 tile = (worldCell - local) / CellsPerTile;
+    int tileIndex = FindTileIndex(tile);
+
+    if (tileIndex < 0)
+    {
+        return -1;
+    }
+
+    return tileIndex * CellCountPerTile + local.x + CellsPerTile * (local.y + CellsPerTile * local.z);
+}
+
+// 월드 셀 좌표
+int3 IndexToWorldCell(int cellIndex)
+{
+    int tileIndex = cellIndex / CellCountPerTile;
+    int localIndex = cellIndex - tileIndex * CellCountPerTile;
+    int3 local = int3(localIndex & 7, (localIndex >> 3) & 7, localIndex >> 6);
+    return _TileCoordinates[tileIndex].xyz * CellsPerTile + local;
+}
+
+// 셀 상태
+int CellState(int3 worldCell)
+{
+    int index = WorldCellToIndex(worldCell);
+
+    if (index < 0)
+    {
+        return 0;
+    }
+
+    return _CellStates[index];
+}
+
+// 면 좌표
+void DecodeFace(int faceIndex, int axis, out int3 worldFace, out float3 facePosition)
+{
+    int tileIndex = faceIndex / FaceCountPerTile;
+    int localIndex = faceIndex - tileIndex * FaceCountPerTile;
+    int3 local;
+    float3 offset;
+
+    if (axis == 0)
+    {
+        local = int3(localIndex % 9, (localIndex / 9) % 8, localIndex / 72);
+        offset = float3(0, 0.5, 0.5);
+    }
+    else if (axis == 1)
+    {
+        local = int3(localIndex % 8, (localIndex / 8) % 9, localIndex / 72);
+        offset = float3(0.5, 0, 0.5);
+    }
+    else
+    {
+        local = int3(localIndex % 8, (localIndex / 8) % 8, localIndex / 64);
+        offset = float3(0.5, 0.5, 0);
+    }
+
+    worldFace = _TileCoordinates[tileIndex].xyz * CellsPerTile + local;
+    facePosition = ((float3) worldFace + offset) * _CellSize;
+}
+
+// 면 양쪽 셀
+void FaceSides(int3 worldFace, int axis, out int3 negativeCell, out int3 positiveCell)
+{
+    int3 direction = axis == 0 ? int3(1, 0, 0) : (axis == 1 ? int3(0, 1, 0) : int3(0, 0, 1));
+    negativeCell = worldFace - direction;
+    positiveCell = worldFace;
+}
+
+// 입자 속도 전달
+float2 ParticleToFace(int faceIndex, int axis)
+{
+    int3 worldFace;
+    float3 facePosition;
+    DecodeFace(faceIndex, axis, worldFace, facePosition);
+
+    float velocitySum = 0.0;
+    float weightSum = 0.0;
+
+    for (int z = -1; z <= 1; z++)
+    {
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                int cellIndex = WorldCellToIndex(worldFace + int3(x, y, z));
+
+                if (cellIndex < 0)
+                {
+                    continue;
+                }
+
+                for (int particle = _CellHeads[cellIndex]; particle >= 0; particle = _ParticleNext[particle])
+                {
+                    float3 distance = abs(_Positions[particle].xyz - facePosition);
+                    float3 axisWeight = saturate(1.0 - distance / _CellSize);
+                    float weight = axisWeight.x * axisWeight.y * axisWeight.z;
+                    float3 particleVelocity = _Velocities[particle].xyz;
+
+                    velocitySum += weight * particleVelocity[axis];
+                    weightSum += weight;
+                }
+            }
+        }
+    }
+
+    return float2(velocitySum, weightSum);
+}
+
+// 면 초기화
+[numthreads(64, 1, 1)]
+void ClearFaces(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    _UFaceData[id.x] = float2(0, 0);
+    _VFaceData[id.x] = float2(0, 0);
+    _WFaceData[id.x] = float2(0, 0);
+}
+
+// X 속도 전달
+[numthreads(64, 1, 1)]
+void ParticleToU(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    _UFaceData[id.x] = ParticleToFace((int) id.x, 0);
+}
+
+// Y 속도 전달
+[numthreads(64, 1, 1)]
+void ParticleToV(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    _VFaceData[id.x] = ParticleToFace((int) id.x, 1);
+}
+
+// Z 속도 전달
+[numthreads(64, 1, 1)]
+void ParticleToW(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    _WFaceData[id.x] = ParticleToFace((int) id.x, 2);
+}
+
+// 면 속도 정규화
+float2 NormalizeFace(float2 face)
+{
+    if (face.y > 0.000001)
+    {
+        face.x /= face.y;
+    }
+    else
+    {
+        face = float2(0, 0);
+    }
+
+    return face;
+}
+
+[numthreads(64, 1, 1)]
+void NormalizeFaces(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    _UFaceData[id.x] = NormalizeFace(_UFaceData[id.x]);
+    _VFaceData[id.x] = NormalizeFace(_VFaceData[id.x]);
+    _WFaceData[id.x] = NormalizeFace(_WFaceData[id.x]);
+}
+
+// 셀 분류
+[numthreads(64, 1, 1)]
+void ClassifyCells(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _GridCellCount)
+    {
+        return;
+    }
+
+    int index = (int) id.x;
+    _CellStates[index] = _ObstacleSdf[index] <= 0.0 ? 2 : (_CellCounts[index] > 0 ? 1 : 0);
+    _Divergence[index] = 0.0;
+    _PressureA[index] = 0.0;
+    _PressureB[index] = 0.0;
+}
+
+// 고체 경계
+float2 BoundFace(float2 face, int3 negativeCell, int3 positiveCell)
+{
+    if (CellState(negativeCell) == 2 || CellState(positiveCell) == 2)
+    {
+        face.x = 0.0;
+        face.y = max(face.y, 1.0);
+    }
+
+    return face;
+}
+
+[numthreads(64, 1, 1)]
+void ApplyBoundaries(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    int3 worldFace;
+    float3 facePosition;
+    int3 negativeCell;
+    int3 positiveCell;
+
+    DecodeFace((int) id.x, 0, worldFace, facePosition);
+    FaceSides(worldFace, 0, negativeCell, positiveCell);
+    _UFaceData[id.x] = BoundFace(_UFaceData[id.x], negativeCell, positiveCell);
+
+    DecodeFace((int) id.x, 1, worldFace, facePosition);
+    FaceSides(worldFace, 1, negativeCell, positiveCell);
+    _VFaceData[id.x] = BoundFace(_VFaceData[id.x], negativeCell, positiveCell);
+
+    DecodeFace((int) id.x, 2, worldFace, facePosition);
+    FaceSides(worldFace, 2, negativeCell, positiveCell);
+    _WFaceData[id.x] = BoundFace(_WFaceData[id.x], negativeCell, positiveCell);
+}
+
+// 이전 속도 저장
+[numthreads(64, 1, 1)]
+void SaveFaces(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    _OldUFaceData[id.x] = _UFaceData[id.x];
+    _OldVFaceData[id.x] = _VFaceData[id.x];
+    _OldWFaceData[id.x] = _WFaceData[id.x];
+}
+
+// 속도 발산
+[numthreads(64, 1, 1)]
+void ComputeDivergence(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _GridCellCount)
+    {
+        return;
+    }
+
+    int cellIndex = (int) id.x;
+
+    if (_CellStates[cellIndex] != 1)
+    {
+        _Divergence[cellIndex] = 0.0;
+        return;
+    }
+
+    int tileIndex = cellIndex / CellCountPerTile;
+    int localIndex = cellIndex - tileIndex * CellCountPerTile;
+    int x = localIndex & 7;
+    int y = (localIndex >> 3) & 7;
+    int z = localIndex >> 6;
+
+    int uLeft = tileIndex * FaceCountPerTile + x + 9 * (y + 8 * z);
+    int vBottom = tileIndex * FaceCountPerTile + x + 8 * (y + 9 * z);
+    int wBack = tileIndex * FaceCountPerTile + x + 8 * (y + 8 * z);
+
+    float difference = _UFaceData[uLeft + 1].x - _UFaceData[uLeft].x;
+    difference += _VFaceData[vBottom + 8].x - _VFaceData[vBottom].x;
+    difference += _WFaceData[wBack + 64].x - _WFaceData[wBack].x;
+
+    float targetCount = max(_TargetParticlesPerCell, 1.0);
+    float overfill = max(0.0, ((float) _CellCounts[cellIndex] - targetCount) / targetCount);
+    float expansion = min(overfill, 1.0) * _VolumeCorrectionRate / max(_DeltaTime, 0.000001);
+    _Divergence[cellIndex] = difference / _CellSize - expansion;
+}
+
+// 압력 이웃
+void AddNeighbor(int3 worldCell, bool readA, inout float sum, inout int diagonal)
+{
+    int state = CellState(worldCell);
+
+    if (state == 2)
+    {
+        return;
+    }
+
+    diagonal++;
+
+    if (state == 1)
+    {
+        int cellIndex = WorldCellToIndex(worldCell);
+        sum += readA ? _PressureA[cellIndex] : _PressureB[cellIndex];
+    }
+}
+
+float SolvePressure(int cellIndex, bool readA)
+{
+    if (_CellStates[cellIndex] != 1)
+    {
+        return 0.0;
+    }
+
+    int3 cell = IndexToWorldCell(cellIndex);
+    float sum = 0.0;
+    int diagonal = 0;
+
+    AddNeighbor(cell + int3(-1, 0, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(1, 0, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, -1, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, 1, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, 0, -1), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, 0, 1), readA, sum, diagonal);
+
+    if (diagonal == 0)
+    {
+        return 0.0;
+    }
+
+    return (sum - _Divergence[cellIndex] * _CellSize * _CellSize / max(_DeltaTime, 0.000001)) / diagonal;
+}
+
+// 압력 반복
+[numthreads(64, 1, 1)]
+void JacobiA(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _GridCellCount)
+    {
+        return;
+    }
+
+    _PressureB[id.x] = SolvePressure((int) id.x, true);
+}
+
+[numthreads(64, 1, 1)]
+void JacobiB(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _GridCellCount)
+    {
+        return;
+    }
+
+    _PressureA[id.x] = SolvePressure((int) id.x, false);
+}
+
+float CellPressure(int3 worldCell)
+{
+    int cellIndex = WorldCellToIndex(worldCell);
+
+    if (cellIndex < 0 || _CellStates[cellIndex] != 1)
+    {
+        return 0.0;
+    }
+
+    return _PressureIsA != 0 ? _PressureA[cellIndex] : _PressureB[cellIndex];
+}
+
+// 압력 적용
+float2 ProjectFace(float2 face, int3 negativeCell, int3 positiveCell)
+{
+    int negativeState = CellState(negativeCell);
+    int positiveState = CellState(positiveCell);
+
+    if (negativeState == 2 || positiveState == 2)
+    {
+        return float2(0.0, max(face.y, 1.0));
+    }
+
+    if (negativeState != 1 && positiveState != 1)
+    {
+        return float2(0.0, 0.0);
+    }
+
+    face.x -= _DeltaTime * (CellPressure(positiveCell) - CellPressure(negativeCell)) / _CellSize;
+    face.y = max(face.y, 1.0);
+    return face;
+}
+
+[numthreads(64, 1, 1)]
+void ProjectFaces(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _FaceCount)
+    {
+        return;
+    }
+
+    int3 worldFace;
+    float3 facePosition;
+    int3 negativeCell;
+    int3 positiveCell;
+
+    DecodeFace((int) id.x, 0, worldFace, facePosition);
+    FaceSides(worldFace, 0, negativeCell, positiveCell);
+    _UFaceData[id.x] = ProjectFace(_UFaceData[id.x], negativeCell, positiveCell);
+
+    DecodeFace((int) id.x, 1, worldFace, facePosition);
+    FaceSides(worldFace, 1, negativeCell, positiveCell);
+    _VFaceData[id.x] = ProjectFace(_VFaceData[id.x], negativeCell, positiveCell);
+
+    DecodeFace((int) id.x, 2, worldFace, facePosition);
+    FaceSides(worldFace, 2, negativeCell, positiveCell);
+    _WFaceData[id.x] = ProjectFace(_WFaceData[id.x], negativeCell, positiveCell);
+}
+
+// 월드 면 주소
+int WorldFaceToIndex(int3 worldFace, int axis)
+{
+    int3 local = worldFace & int3(7, 7, 7);
+    int3 tile = (worldFace - local) / CellsPerTile;
+    int tileIndex = FindTileIndex(tile);
+
+    if (tileIndex < 0 && local[axis] == 0)
+    {
+        tile[axis] -= 1;
+        tileIndex = FindTileIndex(tile);
+
+        if (tileIndex >= 0)
+        {
+            local[axis] = CellsPerTile;
+        }
+    }
+
+    if (tileIndex < 0)
+    {
+        return -1;
+    }
+
+    if (axis == 0)
+    {
+        return tileIndex * FaceCountPerTile + local.x + 9 * (local.y + 8 * local.z);
+    }
+
+    if (axis == 1)
+    {
+        return tileIndex * FaceCountPerTile + local.x + 8 * (local.y + 9 * local.z);
+    }
+
+    return tileIndex * FaceCountPerTile + local.x + 8 * (local.y + 8 * local.z);
+}
+
+// 면 속도 읽기
+void SampleComponent(float3 position, int axis, bool previous, out float value, out bool valid)
+{
+    float3 coordinate = position / _CellSize;
+    float3 offset = axis == 0 ? float3(0, 0.5, 0.5) : (axis == 1 ? float3(0.5, 0, 0.5) : float3(0.5, 0.5, 0));
+    coordinate -= offset;
+
+    int3 baseFace = (int3) floor(coordinate);
+    float3 fraction = saturate(coordinate - (float3) baseFace);
+    float sum = 0.0;
+    float weightSum = 0.0;
+
+    for (int z = 0; z <= 1; z++)
+    {
+        for (int y = 0; y <= 1; y++)
+        {
+            for (int x = 0; x <= 1; x++)
+            {
+                int faceIndex = WorldFaceToIndex(baseFace + int3(x, y, z), axis);
+
+                if (faceIndex < 0)
+                {
+                    continue;
+                }
+
+                float2 face;
+
+                if (axis == 0)
+                {
+                    face = previous ? _OldUFaceData[faceIndex] : _UFaceData[faceIndex];
+                }
+                else if (axis == 1)
+                {
+                    face = previous ? _OldVFaceData[faceIndex] : _VFaceData[faceIndex];
+                }
+                else
+                {
+                    face = previous ? _OldWFaceData[faceIndex] : _WFaceData[faceIndex];
+                }
+
+                if (face.y <= 0.000001)
+                {
+                    continue;
+                }
+
+                float3 weightAxis = lerp(1.0 - fraction, fraction, float3(x, y, z));
+                float weight = weightAxis.x * weightAxis.y * weightAxis.z;
+                sum += weight * face.x;
+                weightSum += weight;
+            }
+        }
+    }
+
+    valid = weightSum > 0.000001;
+    value = valid ? sum / weightSum : 0.0;
+}
+
+// 입자 속도 전달
+[numthreads(64, 1, 1)]
+void GridToParticles(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+    float3 particleVelocity = _Velocities[index].xyz;
+    float3 result = particleVelocity;
+
+    for (int axis = 0; axis < 3; axis++)
+    {
+        float picVelocity;
+        float oldGridVelocity;
+        bool hasNew;
+        bool hasOld;
+
+        SampleComponent(position, axis, false, picVelocity, hasNew);
+        SampleComponent(position, axis, true, oldGridVelocity, hasOld);
+
+        if (hasNew)
+        {
+            float flipVelocity = particleVelocity[axis] + picVelocity - (hasOld ? oldGridVelocity : picVelocity);
+            result[axis] = lerp(picVelocity, flipVelocity, saturate(_FlipRatio));
+        }
+    }
+
+    result *= max(0.0, 1.0 - _VelocityDamping * _DeltaTime);
+    float speed = length(result);
+
+    if (speed > _MaxSpeed)
+    {
+        result *= _MaxSpeed / speed;
+    }
+
+    _Velocities[index] = float4(result, 0.0);
+}

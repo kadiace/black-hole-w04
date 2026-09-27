@@ -106,8 +106,9 @@ public class BlackHolePathController : MonoBehaviour
 
     private void ProcessRetrieve()
     {
-        if (!Managers.Input.RetrievePressed)
+        if (!Managers.Input.RetrievePressed || Managers.Gravity.ProcessWhiteHoleEliminate)
             return;
         Managers.Gravity.RetrieveWhiteHole();
+        Managers.Gravity.ProcessWhiteHoleEliminate = true;
     }
 }
