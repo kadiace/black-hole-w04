@@ -20,6 +20,20 @@ public class Sliceable : MonoBehaviour
     /// <summary>현재 설정으로 절단 옵션 생성.</summary>
     public MeshSlicer.Options Options => option;
 
+    /// <summary>
+    /// 잘린 조각(안쪽)에 붙일 컴포넌트 타입. 기본은 자기 자신과 같은 타입.
+    /// 파생 클래스에서 다른 Sliceable 파생 타입으로 바꿀 수 있다 (예: 벽 → 들 수 있는 조각).
+    /// </summary>
+    public virtual System.Type InsidePieceType => GetType();
+
+    /// <summary>
+    /// 이 오브젝트를 잘라 조각이 만들어진 직후 호출된다 (조각 설정을 원본 기준으로 맞출 때 오버라이드).
+    /// 조각에는 이미 이 컴포넌트의 직렬화 값이 복사된 상태.
+    /// </summary>
+    /// <param name="piece">새로 만들어진 조각의 Sliceable</param>
+    /// <param name="isInside">잘린 조각(안쪽)이면 true, 떨어져 나간 바깥 파편이면 false</param>
+    protected internal virtual void OnPieceCreated(Sliceable piece, bool isInside) { }
+
     /// <summary>너무 작은 조각은 무시 (무한 분할 방지)</summary>
     bool IsTooSmall()
     {

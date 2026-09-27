@@ -512,12 +512,18 @@ public static partial class MeshSlicer
             go.AddComponent<GravityController>();
 
         // Sliceable 설정을 조각에도 복사 → 조각을 다시 자를 수 있다.
-        // 실제 타입(GetType)으로 붙이므로 CuttableWall 같은 파생 클래스도 그대로 유지된다.
+        // 바깥 조각은 원본과 같은 타입, 잘린 조각(안쪽)은 원본이 지정한 InsidePieceType 으로 붙인다.
+        // (예: CuttableWall 의 잘린 조각 → GrabbablePiece). 이름이 같은 직렬화 필드는 값이 복사된다.
         var srcSliceable = src.GetComponent<Sliceable>();
         if (srcSliceable != null)
         {
-            var dst = go.AddComponent(srcSliceable.GetType());
+            var type = isIn ? srcSliceable.InsidePieceType : srcSliceable.GetType();
+            if (type == null || !typeof(Sliceable).IsAssignableFrom(type))
+                type = srcSliceable.GetType();
+
+            var dst = (Sliceable)go.AddComponent(type);
             JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(srcSliceable), dst);
+            srcSliceable.OnPieceCreated(dst, isIn);
         }
 
 #if UNITY_EDITOR

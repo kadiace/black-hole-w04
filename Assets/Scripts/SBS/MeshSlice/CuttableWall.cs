@@ -1,103 +1,23 @@
 using UnityEngine;
 
-public class CuttableWall : Sliceable, IInteractable
+/// <summary>
+/// 블랙홀 등으로 잘리는 벽.
+/// 벽 자체는 제자리에 남고(Options.keepOriginalObject), 잘린 조각에는 <see cref="GrabbablePiece"/> 가 붙어
+/// 플레이어가 들고 옮길 수 있다. 떨어져 나간 바깥 파편은 CuttableWall 그대로 남는다.
+/// </summary>
+public class CuttableWall : Sliceable
 {
-    [Header("Release")]
+    [Header("잘린 조각")]
+    [Tooltip("잘린 조각(GrabbablePiece)에 적용할 들기 설정")]
     [SerializeField]
-    private LayerMask groundMask;
+    GrabbablePiece.GrabSettings m_pieceGrab = GrabbablePiece.GrabSettings.Default;
 
-    [SerializeField]
-    private float groundCheckDistance = 2f;
+    /// <summary>잘린 조각은 들고 옮길 수 있는 GrabbablePiece 로 만든다.</summary>
+    public override System.Type InsidePieceType => typeof(GrabbablePiece);
 
-    [SerializeField]
-    private float groundSkin = 0.02f;
-
-    [SerializeField]
-    private float regrabDelay = 0.5f;
-
-    private float nextInteractTime;
-
-    Rigidbody rb;
-    Collider col;
-    bool isStatic;
-
-    private void Awake()
+    protected internal override void OnPieceCreated(Sliceable piece, bool isInside)
     {
-        rb = GetComponent<Rigidbody>();
-        isStatic = rb != null;
-        col = GetComponent<Collider>();
-    }
-
-    public void Interact(IInteractor interactor)
-    {
-        if (!isStatic)
-            return;
-        if (Time.time < nextInteractTime)
-            return;
-
-        transform.SetParent(interactor.SnapAt);
-        transform.localPosition = Vector3.zero;
-
-        rb.isKinematic = true;
-        rb.angularVelocity = Vector3.zero;
-        rb.linearVelocity = Vector3.zero;
-
-        return;
-    }
-
-    public void Release(IInteractor interactor)
-    {
-        if (!isStatic)
-            return;
-        if (!transform.IsChildOf(interactor.SnapAt))
-            return;
-
-        transform.SetParent(null);
-
-        rb.angularVelocity = Vector3.zero;
-        rb.linearVelocity = Vector3.zero;
-
-        ResolveGroundOverlap();
-
-        rb.isKinematic = false;
-
-        nextInteractTime = Time.time + regrabDelay;
-    }
-
-    private void ResolveGroundOverlap()
-    {
-        // 절단으로 콜라이더가 MeshCollider 로 교체됐을 수 있으므로 다시 가져온다
-        if (col == null)
-            col = GetComponent<Collider>();
-
-        Vector3 origin = col.bounds.center + Vector3.up * 0.1f;
-
-        float castDistance = col.bounds.extents.y + groundCheckDistance;
-
-        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, castDistance, ~0, QueryTriggerInteraction.Ignore);
-
-        RaycastHit? groundHit = null;
-
-        foreach (RaycastHit hit in hits)
-        {
-            if (!hit.collider.CompareTag("Ground"))
-                continue;
-
-            if (groundHit == null || hit.distance < groundHit.Value.distance)
-                groundHit = hit;
-        }
-
-        if (groundHit == null)
-            return;
-
-        float cubeBottom = col.bounds.min.y;
-        float groundY = groundHit.Value.point.y + groundSkin;
-
-        if (cubeBottom >= groundY)
-            return;
-
-        float correction = groundY - cubeBottom;
-
-        transform.position += Vector3.up * correction;
+        if (isInside && piece is GrabbablePiece grabbable)
+            grabbable.Grab = m_pieceGrab;
     }
 }
