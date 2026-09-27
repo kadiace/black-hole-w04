@@ -24,7 +24,7 @@ public class CameraRotationController : MonoBehaviour
     private void LateUpdate()
     {
         Quaternion targetGravityRotation = _playerController.BaseRotation;
-        float t = 1f - Mathf.Exp(-_gravityRotationDamping * Time.deltaTime);
+        float t = 1f - Mathf.Exp(-Time.deltaTime / _gravityRotationDamping);
         _gravityRotation = Quaternion.Slerp(_gravityRotation, targetGravityRotation, t);
 
         Vector3 yawAxis = _gravityRotation * Vector3.up;

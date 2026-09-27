@@ -61,15 +61,7 @@ public class PlayerController : MonoBehaviour, IPressable
     private Vector3 _contactGroundNormal = Vector3.up;
 
     [Header("Gravity")]
-    [SerializeField]
-    private float _gravityRotationDuration;
-    [SerializeField]
-    private float _gravityRotationThreshold;
     private Quaternion _baseRotation;
-    private bool _isGravityRotating;
-    private float _gravityRotationElapsed;
-    private Quaternion _gravityRotationStart;
-    private Quaternion _gravityRotationTarget;
     private Vector3 _up => InInner ? -_gravityController.GravityDir : Vector3.up;
     public bool InInner { private get; set; }
     public Quaternion BaseRotation => _baseRotation;
@@ -214,35 +206,10 @@ public class PlayerController : MonoBehaviour, IPressable
 
     private void ProcessRotation()
     {
-        if (!_isGravityRotating)
-        {
-            Vector3 targetUp = _up;
-            Vector3 baseUp = _baseRotation * Vector3.up;
-
-            Quaternion gravityCorrection = Quaternion.FromToRotation(baseUp, targetUp);
-
-            float angle = Quaternion.Angle(_baseRotation, gravityCorrection);
-
-            if (angle > _gravityRotationThreshold)
-            {
-                _gravityRotationStart = _baseRotation;
-                _gravityRotationTarget = gravityCorrection * _baseRotation;
-                _gravityRotationElapsed = 0f;
-                _isGravityRotating = true;
-            }
-        }
-        else
-        {
-            _gravityRotationElapsed += Time.fixedDeltaTime;
-            float t = Mathf.Clamp01(_gravityRotationElapsed / _gravityRotationDuration);
-            t = Mathf.SmoothStep(0f, 1f, t);
-            Quaternion rotation = Quaternion.Slerp(_gravityRotationStart, _gravityRotationTarget, t);
-
-            if (t >= 1f)
-                _isGravityRotating = false;
-
-            _baseRotation = rotation;
-        }
+        Vector3 targetUp = _up;
+        Vector3 baseUp = _baseRotation * Vector3.up;
+        Quaternion gravityCorrection = Quaternion.FromToRotation(baseUp, targetUp);
+        _baseRotation = gravityCorrection * _baseRotation;
 
         Vector3 yawAxis = _baseRotation * Vector3.up;
         Quaternion yawRotation = Quaternion.AngleAxis(Yaw, yawAxis);

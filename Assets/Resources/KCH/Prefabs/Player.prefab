@@ -93,7 +93,7 @@ MonoBehaviour:
   _minPitch: -80
   _maxPitch: 90
   _moveSpeed: 20
-  _sprintSpeed: 0
+  _sprintSpeed: 30
   _moveAcceleration: 20
   _jumpAcceleration: 8
   _coyoteTime: 0.1
@@ -104,8 +104,6 @@ MonoBehaviour:
     m_Bits: 64
   _groundCheckDistance: 0.01
   _maxGroundAngle: 50
-  _gravityRotationDuration: 0.2
-  _gravityRotationThreshold: 0.01
   interactDistance: 5
   _collider: {fileID: 7762167184305486458}
 --- !u!1 &4753399163571003592
@@ -222,6 +220,37 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &4945535896429640208
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2070170310352083180}
+  m_Layer: 0
+  m_Name: SnapTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2070170310352083180
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4945535896429640208}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.778}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7380946483626393334}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6334811566637467080
 GameObject:
   m_ObjectHideFlags: 0
@@ -286,6 +315,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4554026016911210998}
+  - {fileID: 2070170310352083180}
   m_Father: {fileID: 6743455138083839868}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2056196084990323560
