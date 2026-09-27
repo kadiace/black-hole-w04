@@ -134,25 +134,19 @@ public static partial class MeshSlicer
         foreach (var m in chunkMeshes) total += Mathf.Abs(SignedVolume(m));
         float Ratio(Mesh m) => total > 1e-8f ? Mathf.Abs(SignedVolume(m)) / total : 1f;
 
-        if (remainingMesh != null)
-        {
-            var remaining = CreatePiece(target, remainingMesh, "_Rest", Ratio(remainingMesh), options);
-            outside.Add(remaining);
-            // 남은 조각은 구 중점 반대 방향으로 밀어냄
-            if (options.separationImpulse > 0f)
-            {
-                Vector3 away = remaining.transform.TransformPoint(remainingMesh.bounds.center) - worldCenter;
-                if (away.sqrMagnitude > 1e-8f) AddImpulse(remaining, away.normalized * options.separationImpulse);
-            }
-        }
-
+        // 잘린 조각(덩어리)을 먼저 만든다. 원본의 질량/콜라이더를 복사하므로 원본을 고치기 전이어야 한다.
         if (options.keepInside)
         {
             foreach (var m in chunkMeshes)
-                inside.Add(CreatePiece(target, m, "_Chunk", Ratio(m), options));
+                inside.Add(CreatePiece(target, m, "_Chunk", Ratio(m), options, true));
         }
 
-        if (options.destroyOriginal)
+        // 남은 조각: 원본 유지 옵션이면 원본에 적용
+        bool kept = false;
+        if (remainingMesh != null)
+            kept = EmitOutside(target, new List<Mesh> { remainingMesh }, Ratio, "_Rest", worldCenter, options, outside);
+
+        if (!kept && options.destroyOriginal)
             DestroyObject(target);
 
         return true;
@@ -228,21 +222,16 @@ public static partial class MeshSlicer
             return m;
         }
 
-        if (keepArea > 0f)
-        {
-            var go = CreatePiece(target, Build(keep, "_Rest"), "_Rest", keepArea / total, options);
-            outside.Add(go);
-            if (options.separationImpulse > 0f)
-            {
-                Vector3 away = go.transform.TransformPoint(go.GetComponent<MeshFilter>().sharedMesh.bounds.center) - worldCenter;
-                if (away.sqrMagnitude > 1e-8f) AddImpulse(go, away.normalized * options.separationImpulse);
-            }
-        }
-
+        // 떼어낸 조각을 먼저 만든다 (원본을 고치기 전에 원본 설정을 복사해야 하므로)
         if (options.keepInside)
-            inside.Add(CreatePiece(target, Build(cut, "_Chunk"), "_Chunk", cutArea / total, options));
+            inside.Add(CreatePiece(target, Build(cut, "_Chunk"), "_Chunk", cutArea / total, options, true));
 
-        if (options.destroyOriginal)
+        // 남은 조각: 원본 유지 옵션이면 원본에 적용
+        bool kept = false;
+        if (keepArea > 0f)
+            kept = EmitOutside(target, new List<Mesh> { Build(keep, "_Rest") }, _ => keepArea / total, "_Rest", worldCenter, options, outside);
+
+        if (!kept && options.destroyOriginal)
             DestroyObject(target);
 
         return true;

@@ -5,6 +5,7 @@ using UnityEngine;
 /// 절단 가능한 오브젝트 표시 + 절단 설정.
 /// MeshFilter 가 있는 오브젝트에 붙이고 Slice(평면) / CutSphere(구체) / CutByMesh(메시 모양) 를 호출한다.
 /// 조각에도 이 컴포넌트가 복사되므로 계속 잘라낼 수 있다.
+/// 상속해서 쓸 수 있다 (예: CuttableWall). 조각에는 파생 클래스 타입 그대로 복사된다.
 /// </summary>
 [RequireComponent(typeof(MeshFilter), typeof(Renderer))]
 public class Sliceable : MonoBehaviour
@@ -39,7 +40,7 @@ public class Sliceable : MonoBehaviour
     public bool Slice(Vector3 worldPoint, Vector3 worldNormal, out GameObject positive, out GameObject negative)
     {
         positive = negative = null;
-        if (IsTooSmall()) 
+        if (IsTooSmall())
             return false;
         return MeshSlicer.Slice(gameObject, worldPoint, worldNormal, Options, out positive, out negative);
     }
@@ -59,7 +60,7 @@ public class Sliceable : MonoBehaviour
     public bool CutSphere(Vector3 worldCenter, float worldRadius, out List<GameObject> outside, out List<GameObject> inside)
     {
         outside = inside = null;
-        if (IsTooSmall()) 
+        if (IsTooSmall())
             return false;
         return MeshSlicer.CutBySphere(gameObject, worldCenter, worldRadius, Options, out outside, out inside);
     }
@@ -76,7 +77,7 @@ public class Sliceable : MonoBehaviour
     public bool CutSphereByProjection(Vector3 worldCenter, float worldRadius, out List<GameObject> outside, out List<GameObject> inside)
     {
         outside = inside = null;
-        if (IsTooSmall()) 
+        if (IsTooSmall())
             return false;
         return MeshSlicer.CutBySphereProjection(gameObject, worldCenter, worldRadius, Options, out outside, out inside);
     }

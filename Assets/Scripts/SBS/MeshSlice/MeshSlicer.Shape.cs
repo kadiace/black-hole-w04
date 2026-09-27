@@ -51,7 +51,7 @@ public static partial class MeshSlicer
         inside = new List<GameObject>();
 
         // 타겟에서 메시 추출
-        if (!TryGetReadableMesh(target, out Mesh srcMesh)) 
+        if (!TryGetReadableMesh(target, out Mesh srcMesh))
             return false;
 
         // 커터 메시 검증
@@ -73,7 +73,7 @@ public static partial class MeshSlicer
         // 커터를 로컬 좌표로 이동.
         Matrix4x4 cutterToTarget = target.transform.worldToLocalMatrix * cutterLocalToWorld;
         int subCount = srcMesh.subMeshCount; // 서브 메시 갯수
-        int capSub = Mathf.Clamp(options.capSubmeshIndex, 0, subCount - 1); 
+        int capSub = Mathf.Clamp(options.capSubmeshIndex, 0, subCount - 1);
 
         // 대상 메시를 폴리곤 단위로 분할
         var targetPolys = MeshCSG.FromMesh(srcMesh);
@@ -82,7 +82,7 @@ public static partial class MeshSlicer
 
         // 3) 차집합/교집합을 한 번에 계산. 교집합이 비어 있으면 실제로는 안 닿은 것
         MeshCSG.SubtractAndIntersect(targetPolys, cutterPolys, out var outsidePolys, out var insidePolys);
-        if (insidePolys.Count == 0) 
+        if (insidePolys.Count == 0)
             return false;
 
         bool hasTangents = srcMesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Tangent);
@@ -91,36 +91,24 @@ public static partial class MeshSlicer
 
         // 4) 질량 배분: 생성된 모든 조각(버려지는 안쪽 포함) 부피 합 대비 비율
         float total = 0f;
-        foreach (var m in outMeshes) 
+        foreach (var m in outMeshes)
             total += Mathf.Abs(SignedVolume(m));
-        foreach (var m in inMeshes) 
+        foreach (var m in inMeshes)
             total += Mathf.Abs(SignedVolume(m));
         float Ratio(Mesh m) => total > 1e-8f ? Mathf.Abs(SignedVolume(m)) / total : 1f;
 
         // 5) GameObject 생성
-        Vector3 cutterCenter = cutterBounds.center;
-        foreach (var m in outMeshes)
-        {
-            var go = CreatePiece(target, m, "_Out", Ratio(m), options);
-            outside.Add(go);
-            // 바깥 조각은 커터 중심에서 멀어지는 방향으로 밀어냄
-            if (options.separationImpulse > 0f)
-            {
-                Vector3 dir = go.transform.TransformPoint(m.bounds.center) - cutterCenter;
-                if (dir.sqrMagnitude > 1e-8f) AddImpulse(go, dir.normalized * options.separationImpulse);
-            }
-        }
-
+        // 잘린 조각(안쪽)을 먼저 만든다. 원본의 질량/콜라이더를 복사하므로 원본을 고치기 전이어야 한다.
         if (options.keepInside)
         {
             foreach (var m in inMeshes)
-            {
-                var temp = CreatePiece(target, m, "_In", Ratio(m), options, true);
-                inside.Add(temp);
-            }
+                inside.Add(CreatePiece(target, m, "_In", Ratio(m), options, true));
         }
 
-        if (options.destroyOriginal)
+        // 바깥 조각: 원본 유지 옵션이면 가장 큰 덩어리를 원본에 적용
+        bool kept = EmitOutside(target, outMeshes, Ratio, "_Out", cutterBounds.center, options, outside);
+
+        if (!kept && options.destroyOriginal)
             DestroyObject(target);
 
         return true;
@@ -140,7 +128,7 @@ public static partial class MeshSlicer
     {
         mesh = null;
         // 타겟이 없으면 에러
-        if (target == null) 
+        if (target == null)
             return false;
         // 타겟에 메시 필터 컴포 없으면 || 메시 필터 내 메시가 널이면 에러
         if (!target.TryGetComponent(out MeshFilter filter) || filter.sharedMesh == null)

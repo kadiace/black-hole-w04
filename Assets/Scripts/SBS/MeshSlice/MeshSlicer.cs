@@ -71,7 +71,14 @@ public static partial class MeshSlicer
                  "SplitAsIs: 구에 걸린 삼각형을 원래 모양 그대로 떼어냄 / Csg: CSG 구체 절단 / None: 자르지 않음")]
         public ProjectionFallback projectionFallback;
 
+        [Header("원본 / 잘린 조각 처리")]
+        [Tooltip("모양 절단 시 원본 GameObject 를 유지하고 메시/콜라이더만 파인 모양으로 교체 (끄면 원본을 지우고 새 조각 생성)")]
+        public bool keepOriginalObject;
+        [Tooltip("원본 유지 시 Box/Sphere/Capsule 콜라이더를 파인 메시의 MeshCollider 로 교체 (정적이면 구멍까지 충돌에 반영)")]
+        public bool rebuildOriginalCollider;
+        [Tooltip("잘린 조각(안쪽)에 리지드바디가 없으면 새로 붙임")]
         public bool addRigidBody;
+        [Tooltip("잘린 조각(안쪽)에 GravityController 를 붙여 블랙홀로 끌려가게 함 (동적 리지드바디 + 기본 중력 끔)")]
         public bool addGravityController;
 
         public static Options Default => new Options
@@ -85,6 +92,8 @@ public static partial class MeshSlicer
             colliderMode = ColliderMode.ConvexMesh,
             destroyOriginal = true,
             separationImpulse = 0.5f,
+            keepOriginalObject = true,
+            rebuildOriginalCollider = true,
             addRigidBody = true,
             addGravityController = true,
         };
@@ -451,9 +460,14 @@ public static partial class MeshSlicer
             renderer.renderingLayerMask = srcRenderer.renderingLayerMask;
         }
 
+        // 잘린 조각(안쪽)이 GravityController 로 끌려가야 하는지
+        bool pulled = isIn && options.addGravityController;
+
         // 콜라이더는 Rigidbody 보다 먼저 붙인다 (non-convex MeshCollider + 동적 RB 경고 방지).
+        // 안쪽 조각에 새로 붙일 리지드바디, 끌려가는 조각도 동적이므로 함께 고려한다.
         var srcRb = src.GetComponent<Rigidbody>();
-        bool dynamicBody = srcRb != null && !srcRb.isKinematic;
+        bool addNewBody = srcRb == null && isIn && (options.addRigidBody || pulled);
+        bool dynamicBody = (srcRb != null && !srcRb.isKinematic) || addNewBody || pulled;
         var srcCol = src.GetComponent<Collider>();
         if (srcCol != null)
             CopyCollider(srcCol, go, mesh, options.colliderMode, dynamicBody);
@@ -477,25 +491,32 @@ public static partial class MeshSlicer
                 rb.linearVelocity = srcRb.GetPointVelocity(worldCenter);
                 rb.angularVelocity = srcRb.angularVelocity;
             }
+
+            // 원본이 키네마틱(고정 벽)이어도 끌려가는 조각은 움직여야 한다.
+            // 중력은 GravityController 가 직접 적용하므로 기본 중력은 끈다 (이중 중력 방지).
+            if (pulled)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = false;
+            }
         }
-        else if (options.addRigidBody && isIn)
+        else if (addNewBody)
         {
             var rb = go.AddComponent<Rigidbody>();
             rb.mass = Mathf.Max(0.0001f, 1 * massRatio);
-            rb.useGravity = true;
             rb.isKinematic = false;
+            rb.useGravity = !pulled;
         }
 
-        if (options.addGravityController && isIn)
-        {
+        if (pulled)
             go.AddComponent<GravityController>();
-        }
 
         // Sliceable 설정을 조각에도 복사 → 조각을 다시 자를 수 있다.
+        // 실제 타입(GetType)으로 붙이므로 CuttableWall 같은 파생 클래스도 그대로 유지된다.
         var srcSliceable = src.GetComponent<Sliceable>();
         if (srcSliceable != null)
         {
-            var dst = go.AddComponent<Sliceable>();
+            var dst = go.AddComponent(srcSliceable.GetType());
             JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(srcSliceable), dst);
         }
 
@@ -504,6 +525,133 @@ public static partial class MeshSlicer
             Undo.RegisterCreatedObjectUndo(go, "Mesh Slice");
 #endif
         return go;
+    }
+
+    /// <summary>
+    /// 모양 절단의 바깥쪽(남는 쪽) 결과 처리.
+    /// keepOriginalObject 면 가장 큰 덩어리는 원본 GameObject 에 적용하고(원본 유지),
+    /// 나머지 떨어진 덩어리들은 새 조각으로 만든다. 새 조각은 pushCenter 반대 방향으로 밀어낸다.
+    /// </summary>
+    /// <returns>원본에 적용했으면 true (이 경우 원본을 파괴하면 안 된다)</returns>
+    static bool EmitOutside(GameObject target, List<Mesh> outMeshes, Func<Mesh, float> ratio, string suffix,
+        Vector3 pushCenter, Options options, List<GameObject> outside)
+    {
+        int keepIndex = -1;
+        if (options.keepOriginalObject)
+        {
+            for (int i = 0; i < outMeshes.Count; i++)
+                if (keepIndex < 0 || ratio(outMeshes[i]) > ratio(outMeshes[keepIndex]))
+                    keepIndex = i;
+        }
+
+        for (int i = 0; i < outMeshes.Count; i++)
+        {
+            var m = outMeshes[i];
+            if (i == keepIndex)
+            {
+                ApplyToOriginal(target, m, ratio(m), options);
+                outside.Add(target);
+                continue;
+            }
+
+            var go = CreatePiece(target, m, suffix, ratio(m), options);
+            outside.Add(go);
+            if (options.separationImpulse > 0f)
+            {
+                Vector3 dir = go.transform.TransformPoint(m.bounds.center) - pushCenter;
+                if (dir.sqrMagnitude > 1e-8f) AddImpulse(go, dir.normalized * options.separationImpulse);
+            }
+        }
+        return keepIndex >= 0;
+    }
+
+    // 절단으로 만들어 원본에 적용한 메시들. 다음 절단으로 교체될 때 해제해서 누수를 막는다.
+    static readonly HashSet<Mesh> s_appliedMeshes = new HashSet<Mesh>();
+
+    /// <summary>
+    /// 원본 GameObject 를 유지한 채 메시/콜라이더/질량만 절단 결과로 교체한다.
+    /// 원본의 다른 컴포넌트와 외부 참조는 그대로 유지된다.
+    /// </summary>
+    static void ApplyToOriginal(GameObject target, Mesh mesh, float massRatio, Options options)
+    {
+        var filter = target.GetComponent<MeshFilter>();
+        var rb = target.GetComponent<Rigidbody>();
+        bool dynamicBody = rb != null && !rb.isKinematic;
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            Undo.RecordObject(filter, "Mesh Cut");
+#endif
+        var oldMesh = filter.sharedMesh;
+        filter.sharedMesh = mesh;
+        s_appliedMeshes.Add(mesh);
+
+        foreach (var col in target.GetComponents<Collider>())
+        {
+            if (col is MeshCollider meshCol)
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    Undo.RecordObject(meshCol, "Mesh Cut");
+#endif
+                if (dynamicBody)
+                    meshCol.convex = true;
+                meshCol.sharedMesh = mesh;
+            }
+            else if (options.rebuildOriginalCollider)
+            {
+                // Box/Sphere/Capsule 은 구멍을 표현할 수 없으므로 파인 메시로 만든 MeshCollider 로 교체.
+                // 정적(리지드바디 없음/키네마틱)이면 non-convex → 구멍까지 충돌에 반영된다.
+                // (non-convex MeshCollider 는 트리거가 될 수 없어서 트리거면 convex)
+                var newCol = AddComponentUndoable<MeshCollider>(target);
+                newCol.convex = dynamicBody || col.isTrigger;
+                newCol.sharedMesh = mesh;
+                newCol.isTrigger = col.isTrigger;
+                newCol.sharedMaterial = col.sharedMaterial;
+                newCol.includeLayers = col.includeLayers;
+                newCol.excludeLayers = col.excludeLayers;
+                newCol.layerOverridePriority = col.layerOverridePriority;
+                newCol.enabled = col.enabled;
+                DestroyComponent(col);
+            }
+        }
+
+        if (rb != null)
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                Undo.RecordObject(rb, "Mesh Cut");
+#endif
+            rb.mass = Mathf.Max(0.0001f, rb.mass * massRatio);
+        }
+
+        // 이전 절단에서 만든 메시였다면 해제 (반복 절단 시 누수 방지).
+        // 에디터 편집 중에는 Undo 가 이전 메시를 참조하므로 해제하지 않는다.
+        if (Application.isPlaying && oldMesh != null && oldMesh != mesh && s_appliedMeshes.Remove(oldMesh))
+            Object.Destroy(oldMesh);
+    }
+
+    static T AddComponentUndoable<T>(GameObject go) where T : Component
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            return Undo.AddComponent<T>(go);
+#endif
+        return go.AddComponent<T>();
+    }
+
+    static void DestroyComponent(Component c)
+    {
+        if (Application.isPlaying)
+        {
+            Object.Destroy(c);
+            return;
+        }
+#if UNITY_EDITOR
+        Undo.DestroyObjectImmediate(c);
+#else
+        Object.DestroyImmediate(c);
+#endif
     }
 
     /// <summary>원본 콜라이더 설정을 조각에 맞게 복사.</summary>
