@@ -48,7 +48,7 @@ public class GravityManager
 
     public void RetrieveWhiteHole()
     {
-        WhiteHole.Eliminate();
+        WhiteHole.ProcessEliminate();
     }
 
     public void DestroyHoles()
