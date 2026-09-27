@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6469620744024695303}
   - component: {fileID: 1809583647004026597}
   - component: {fileID: 6628574255414274888}
-  m_Layer: 6
+  m_Layer: 7
   m_Name: Cylinder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -122,7 +122,7 @@ GameObject:
   m_Component:
   - component: {fileID: 906045332422715658}
   - component: {fileID: 2485936517119121742}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -157,6 +157,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c64d915e65a1b6341937f325aa6a5553, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  buttonType: 0
+  buttonType: 2
   timerDuration: 3
   logicTarget: {fileID: 0}
