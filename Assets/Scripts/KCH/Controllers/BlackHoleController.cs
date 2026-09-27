@@ -29,6 +29,11 @@ public class BlackHoleController : MonoBehaviour
     void Awake()
     {
         cutter = _inner.GetComponent<WallCutter>();
+
+        _processEliminate = false;
+        _isEliminating = false;
+        _isScaling = false;
+        _scalingType = ScalingType.Shrink;
         _outer.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         _inner.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         _eventHorizon.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
@@ -96,6 +101,7 @@ public class BlackHoleController : MonoBehaviour
         _processEliminate = false;
         _isEliminating = false;
         _isScaling = false;
+        _scalingType = ScalingType.Shrink;
         _outer.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         _inner.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         _eventHorizon.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
@@ -110,12 +116,16 @@ public class BlackHoleController : MonoBehaviour
 
     public void SetActive(bool isActivated)
     {
-        _isScaling = true;
-        _scalingType = isActivated ? ScalingType.Expand : ScalingType.Shrink;
-        _startScale = (_outer.transform.localScale.x, _inner.transform.localScale.x, _eventHorizon.transform.localScale.x);
-        _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale, Managers.Gravity.GravityStat.EventHorizonScale) :
-            (Managers.Gravity.GravityStat.InitScale, Managers.Gravity.GravityStat.InitScale, Managers.Gravity.GravityStat.InitScale);
-        _scalingElapsed = 0f;
+        ScalingType nextScalingType = isActivated ? ScalingType.Expand : ScalingType.Shrink;
+        if (_scalingType != nextScalingType)
+        {
+            _isScaling = true;
+            _scalingType = isActivated ? ScalingType.Expand : ScalingType.Shrink;
+            _startScale = (_outer.transform.localScale.x, _inner.transform.localScale.x, _eventHorizon.transform.localScale.x);
+            _targetScale = isActivated ? (Managers.Gravity.GravityStat.OuterScale, Managers.Gravity.GravityStat.InnerScale, Managers.Gravity.GravityStat.EventHorizonScale) :
+                (Managers.Gravity.GravityStat.InitScale, Managers.Gravity.GravityStat.InitScale, Managers.Gravity.GravityStat.InitScale);
+            _scalingElapsed = 0f;
+        }
         if (isActivated)
             _convergence.gameObject.SetActive(true);
     }
@@ -127,15 +137,14 @@ public class BlackHoleController : MonoBehaviour
             return;
         _isEliminating = true;
 
-        if (_isScaling)
-            return;
-        else if (_scalingType == ScalingType.Shrink)
+        bool isExpanding = _scalingType == ScalingType.Expand;
+        if (_isScaling == isExpanding)
         {
             Eliminate();
             return;
         }
-
-        SetActive(false);
+        if (!_isScaling && isExpanding)
+            SetActive(false);
     }
 
     private void Eliminate()
