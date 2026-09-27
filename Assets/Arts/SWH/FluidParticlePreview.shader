@@ -4,7 +4,7 @@ Shader "Fluid/ParticlePreview"
     Properties
     {
         _BaseColor ("Color", Color) = (0.1, 0.6, 1, 1)
-        _Radius ("Radius", Range(0.01, 0.5)) = 0.08
+        _Radius ("Radius", Range(0.01, 0.5)) = 0.25
         _Opacity ("Opacity", Range(0, 1)) = 1
         [Enum(Off,0,On,1)] _DepthWrite ("Depth Write", Float) = 1
         _Smoothness ("Smoothness", Range(0, 1)) = 0.5

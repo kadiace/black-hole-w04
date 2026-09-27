@@ -1,132 +1,219 @@
 #pragma kernel ApplyForces
 #pragma kernel Integrate
+#pragma kernel ApplyPositionCorrections
 
 RWStructuredBuffer<float4> _Positions;
 RWStructuredBuffer<float4> _Velocities;
+StructuredBuffer<int4> _TileHash;
 StructuredBuffer<float> _ObstacleSdf;
 StructuredBuffer<float4> _PositionCorrections;
 
 int _ParticleCount;
+int _TileHashCapacity;
 int _IntegrateForces;
-int _ApplySeparation;
-int _GridX;
-int _GridY;
-int _GridZ;
 float _DeltaTime;
 float _Gravity;
 float3 _ExternalAcceleration;
-float3 _GridMin;
-float3 _GridMax;
 float _CellSize;
 float _CollisionRadius;
 float _WallBounce;
 
-int SdfIndex(int3 cell)
+static const int CellsPerTile = 8;
+static const int CellCountPerTile = 512;
+static const float FarDistance = 10000.0;
+
+// 활성 타일 검색
+int FindTileIndex(int3 tile)
 {
-    return cell.x + _GridX * (cell.y + _GridY * cell.z);
+    if (_TileHashCapacity <= 0)
+    {
+        return -1;
+    }
+
+    uint hash = ((uint) tile.x * 73856093u) ^ ((uint) tile.y * 19349663u) ^ ((uint) tile.z * 83492791u);
+    hash ^= hash >> 16;
+
+    uint mask = (uint) (_TileHashCapacity - 1);
+    uint slot = hash & mask;
+
+    for (int probe = 0; probe < _TileHashCapacity; probe++)
+    {
+        int4 entry = _TileHash[slot];
+
+        if (entry.w < 0)
+        {
+            return -1;
+        }
+
+        if (entry.x == tile.x && entry.y == tile.y && entry.z == tile.z)
+        {
+            return entry.w;
+        }
+
+        slot = (slot + 1u) & mask;
+    }
+
+    return -1;
 }
 
+// 장애물 셀 주소
+int WorldCellToIndex(int3 worldCell)
+{
+    int3 local = worldCell & int3(7, 7, 7);
+    int3 tile = (worldCell - local) / CellsPerTile;
+    int tileIndex = FindTileIndex(tile);
+
+    if (tileIndex < 0)
+    {
+        return -1;
+    }
+
+    return tileIndex * CellCountPerTile + local.x + CellsPerTile * (local.y + CellsPerTile * local.z);
+}
+
+// 장애물 거리
 float SampleObstacle(float3 position)
 {
-    float3 coordinate = (position - _GridMin) / _CellSize - 0.5;
+    float3 coordinate = position / _CellSize - 0.5;
     int3 baseCell = (int3) floor(coordinate);
     float3 fraction = saturate(coordinate - (float3) baseCell);
-    int3 size = int3(_GridX, _GridY, _GridZ);
-    float result = 0.0;
+    float distance = 0.0;
 
     for (int z = 0; z <= 1; z++)
+    {
         for (int y = 0; y <= 1; y++)
+        {
             for (int x = 0; x <= 1; x++)
             {
-                int3 cell = clamp(baseCell + int3(x, y, z), int3(0, 0, 0), size - 1);
                 float3 weightAxis = lerp(1.0 - fraction, fraction, float3(x, y, z));
-                result += _ObstacleSdf[SdfIndex(cell)] * weightAxis.x * weightAxis.y * weightAxis.z;
+                float weight = weightAxis.x * weightAxis.y * weightAxis.z;
+
+                if (weight <= 0.0)
+                {
+                    continue;
+                }
+
+                int cellIndex = WorldCellToIndex(baseCell + int3(x, y, z));
+
+                if (cellIndex < 0)
+                {
+                    return FarDistance;
+                }
+
+                distance += _ObstacleSdf[cellIndex] * weight;
             }
-
-    return result;
-}
-
-// 외력 적용
-[numthreads(64, 1, 1)]
-void ApplyForces(uint3 id : SV_DispatchThreadID)
-{
-    uint i = id.x;
-    if (i >= (uint) _ParticleCount)
-    {
-        return;
-    }
-
-    float4 velocity = _Velocities[i];
-    velocity.xyz += (_ExternalAcceleration + float3(0.0, _Gravity, 0.0)) * _DeltaTime;
-    _Velocities[i] = velocity;
-}
-
-// 위치 및 충돌
-[numthreads(64, 1, 1)]
-void Integrate(uint3 id : SV_DispatchThreadID)
-{
-    uint i = id.x;
-    if (i >= (uint) _ParticleCount)
-    {
-        return;
-    }
-
-    float3 position = _Positions[i].xyz;
-    float3 velocity = _Velocities[i].xyz;
-
-    if (_IntegrateForces != 0)
-    {
-        velocity += (_ExternalAcceleration + float3(0.0, _Gravity, 0.0)) * _DeltaTime;
-    }
-
-    position += velocity * _DeltaTime;
-    if (_ApplySeparation != 0)
-    {
-        position += _PositionCorrections[i].xyz;
-    }
-
-    float3 lower = _GridMin + _CollisionRadius;
-    float3 upper = _GridMax - _CollisionRadius;
-
-    for (int axis = 0; axis < 3; axis++)
-    {
-        if (position[axis] < lower[axis])
-        {
-            position[axis] = lower[axis];
-            velocity[axis] = max(0.0, velocity[axis]) - min(0.0, velocity[axis]) * _WallBounce;
-        }
-        else if (position[axis] > upper[axis])
-        {
-            position[axis] = upper[axis];
-            velocity[axis] = min(0.0, velocity[axis]) - max(0.0, velocity[axis]) * _WallBounce;
         }
     }
 
+    return distance;
+}
+
+// 장애물 충돌
+void ResolveObstacles(inout float3 position, inout float3 velocity)
+{
     for (int step = 0; step < 2; step++)
     {
         float distance = SampleObstacle(position);
+
         if (distance >= _CollisionRadius)
         {
             break;
         }
 
         float offset = _CellSize * 0.5;
+        float positiveX = SampleObstacle(position + float3(offset, 0, 0));
+        float negativeX = SampleObstacle(position - float3(offset, 0, 0));
+        float positiveY = SampleObstacle(position + float3(0, offset, 0));
+        float negativeY = SampleObstacle(position - float3(0, offset, 0));
+        float positiveZ = SampleObstacle(position + float3(0, 0, offset));
+        float negativeZ = SampleObstacle(position - float3(0, 0, offset));
+
         float3 gradient = float3(
-            SampleObstacle(position + float3(offset, 0, 0)) - SampleObstacle(position - float3(offset, 0, 0)),
-            SampleObstacle(position + float3(0, offset, 0)) - SampleObstacle(position - float3(0, offset, 0)),
-            SampleObstacle(position + float3(0, 0, offset)) - SampleObstacle(position - float3(0, 0, offset)));
+            positiveX < FarDistance && negativeX < FarDistance ? positiveX - negativeX : 0.0,
+            positiveY < FarDistance && negativeY < FarDistance ? positiveY - negativeY : 0.0,
+            positiveZ < FarDistance && negativeZ < FarDistance ? positiveZ - negativeZ : 0.0);
+
         float gradientLength = length(gradient);
-        float3 normal = gradientLength > 0.000001 ? gradient / gradientLength : float3(0, 1, 0);
+        float velocityLength = length(velocity);
+        float3 normal = float3(0, 1, 0);
+
+        if (gradientLength > 0.000001)
+        {
+            normal = gradient / gradientLength;
+        }
+        else if (velocityLength > 0.000001)
+        {
+            normal = -velocity / velocityLength;
+        }
+
         position += normal * (_CollisionRadius - distance);
 
         float normalSpeed = dot(velocity, normal);
+
         if (normalSpeed < 0.0)
         {
             velocity -= (1.0 + _WallBounce) * normalSpeed * normal;
         }
     }
+}
 
-    position = clamp(position, lower, upper);
-    _Positions[i] = float4(position, 1.0);
-    _Velocities[i] = float4(velocity, 0.0);
+// 외력 적용
+[numthreads(64, 1, 1)]
+void ApplyForces(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float4 velocity = _Velocities[index];
+    velocity.xyz += (_ExternalAcceleration + float3(0, _Gravity, 0)) * _DeltaTime;
+    _Velocities[index] = velocity;
+}
+
+// 입자 이동
+[numthreads(64, 1, 1)]
+void Integrate(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+    float3 velocity = _Velocities[index].xyz;
+
+    if (_IntegrateForces != 0)
+    {
+        velocity += (_ExternalAcceleration + float3(0, _Gravity, 0)) * _DeltaTime;
+    }
+
+    position += velocity * _DeltaTime;
+    ResolveObstacles(position, velocity);
+
+    _Positions[index] = float4(position, 1.0);
+    _Velocities[index] = float4(velocity, 0.0);
+}
+
+// 간격 보정 적용
+[numthreads(64, 1, 1)]
+void ApplyPositionCorrections(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[index].xyz + _PositionCorrections[index].xyz;
+    float3 velocity = _Velocities[index].xyz;
+    ResolveObstacles(position, velocity);
+
+    _Positions[index] = float4(position, 1.0);
+    _Velocities[index] = float4(velocity, 0.0);
 }
