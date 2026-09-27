@@ -7,15 +7,15 @@ public class PlayerController : MonoBehaviour, IPressable
     [SerializeField]
     private GameObject _cameraTarget;
     [SerializeField]
-    private float _mouseSensitivity = 0.12f;
+    private float _mouseSensitivity;
     [SerializeField]
-    private float _gamepadSensitivity = 180f;
+    private float _gamepadSensitivity;
     [SerializeField]
-    private float _minPitch = -30f;
+    private float _minPitch;
     [SerializeField]
-    private float _maxPitch = 70f;
+    private float _maxPitch;
     private float _pitch;
-    private float _yaw;
+    public float Yaw { get; private set; }
 
     [Header("Move")]
     [SerializeField]
@@ -23,8 +23,9 @@ public class PlayerController : MonoBehaviour, IPressable
     [SerializeField]
     private float _sprintSpeed;
     [SerializeField]
-    private float _moveAcceleration = 20f;
+    private float _moveAcceleration;
     private Vector2 _moveInput;
+    private bool _sprintInput;
 
     [Header("Jump")]
     [SerializeField]
@@ -60,17 +61,10 @@ public class PlayerController : MonoBehaviour, IPressable
     private Vector3 _contactGroundNormal = Vector3.up;
 
     [Header("Gravity")]
-    [SerializeField]
-    private float _gravityRotationDuration;
-    [SerializeField]
-    private float _gravityRotationThreshold;
     private Quaternion _baseRotation;
-    private bool _isGravityRotating;
-    private float _gravityRotationElapsed;
-    private Quaternion _gravityRotationStart;
-    private Quaternion _gravityRotationTarget;
     private Vector3 _up => InInner ? -_gravityController.GravityDir : Vector3.up;
-    public bool InInner { get; set; }
+    public bool InInner { private get; set; }
+    public Quaternion BaseRotation => _baseRotation;
 
     [Header("Interactive")]
     [SerializeField]
@@ -95,6 +89,7 @@ public class PlayerController : MonoBehaviour, IPressable
         ProcessLookInput();
         ProcessJumpInput();
         ProcessMoveInput();
+        ProcessSprintInput();
         ProcessInteractive();
     }
 
@@ -108,20 +103,16 @@ public class PlayerController : MonoBehaviour, IPressable
         Debug.Log($"IsGrounded: {_isGrounded}");
     }
 
-    void LateUpdate()
-    {
-        _cameraTarget.transform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
-    }
-
     private void ProcessLookInput()
     {
         Vector2 lookInput = Managers.Input.LookInput;
 
         float lookSensitivity = Managers.Input.GamePadConnected ? _gamepadSensitivity * Time.deltaTime : _mouseSensitivity;
 
-        _yaw += lookInput.x * lookSensitivity;
+        Yaw += lookInput.x * lookSensitivity;
         _pitch -= lookInput.y * lookSensitivity;
         _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
+        _cameraTarget.transform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
     }
 
     private void ProcessJumpInput()
@@ -135,6 +126,11 @@ public class PlayerController : MonoBehaviour, IPressable
     private void ProcessMoveInput()
     {
         _moveInput = Managers.Input.MoveInput;
+    }
+
+    private void ProcessSprintInput()
+    {
+        _sprintInput = Managers.Input.SprintHeld;
     }
 
     private void CheckGround()
@@ -210,38 +206,13 @@ public class PlayerController : MonoBehaviour, IPressable
 
     private void ProcessRotation()
     {
-        if (!_isGravityRotating)
-        {
-            Vector3 targetUp = _up;
-            Vector3 baseUp = _baseRotation * Vector3.up;
-
-            Quaternion gravityCorrection = Quaternion.FromToRotation(baseUp, targetUp);
-
-            float angle = Quaternion.Angle(_baseRotation, gravityCorrection);
-
-            if (angle > _gravityRotationThreshold)
-            {
-                _gravityRotationStart = _baseRotation;
-                _gravityRotationTarget = gravityCorrection * _baseRotation;
-                _gravityRotationElapsed = 0f;
-                _isGravityRotating = true;
-            }
-        }
-        else
-        {
-            _gravityRotationElapsed += Time.fixedDeltaTime;
-            float t = Mathf.Clamp01(_gravityRotationElapsed / _gravityRotationDuration);
-            t = Mathf.SmoothStep(0f, 1f, t);
-            Quaternion rotation = Quaternion.Slerp(_gravityRotationStart, _gravityRotationTarget, t);
-
-            if (t >= 1f)
-                _isGravityRotating = false;
-
-            _baseRotation = rotation;
-        }
+        Vector3 targetUp = _up;
+        Vector3 baseUp = _baseRotation * Vector3.up;
+        Quaternion gravityCorrection = Quaternion.FromToRotation(baseUp, targetUp);
+        _baseRotation = gravityCorrection * _baseRotation;
 
         Vector3 yawAxis = _baseRotation * Vector3.up;
-        Quaternion yawRotation = Quaternion.AngleAxis(_yaw, yawAxis);
+        Quaternion yawRotation = Quaternion.AngleAxis(Yaw, yawAxis);
         Quaternion targetRotation = yawRotation * _baseRotation;
 
         _rb.MoveRotation(targetRotation);
@@ -291,7 +262,9 @@ public class PlayerController : MonoBehaviour, IPressable
             return;
 
         moveDirection.Normalize();
-        Vector3 movement = _moveSpeed * Time.fixedDeltaTime * moveDirection;
+
+        float speed = _sprintInput ? _sprintSpeed : _moveSpeed;
+        Vector3 movement = speed * Time.fixedDeltaTime * moveDirection;
         _rb.MovePosition(_rb.position + movement);
     }
 
@@ -312,17 +285,17 @@ public class PlayerController : MonoBehaviour, IPressable
     private void ProcessInteractive()
     {
         if (!Managers.Input.InteractPressed) return;
-        // ¸ÞÀÎ Ä«¸Þ¶ó ºäÆ÷Æ® Áß¾Ó ±âÁØ ·¹ÀÌ ¹ß½Î!!!!!!!!
+        // ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ß¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß½ï¿½!!!!!!!!
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green);
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, LayerMask.NameToLayer("interactive"), QueryTriggerInteraction.Ignore))
         {
-            // Å¸°Ù Ã¼Å©
+            // Å¸ï¿½ï¿½ Ã¼Å©
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
 
-            // Å¸°Ù »óÈ£ÀÛ¿ë ÀÛµ¿
+            // Å¸ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½Ûµï¿½
             if (interactable != null)
                 interactable.Interact();
 
