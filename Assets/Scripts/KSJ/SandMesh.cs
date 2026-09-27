@@ -217,20 +217,32 @@ public class SandMesh : MonoBehaviour
 
     void SandRelaxation(float _deltatime)
     {
-        
+        float diagonalSpacing = Mathf.Sqrt(spaceX * spaceX + spaceY * spaceY);
         heightChange = new float[(xSize+1) * (zSize +1)];
 
        for(int x=0;x< xSize; x++)
         {
             for(int z=0; z< zSize; z++)
             {
-                int index = z * (xSize + 1) + x;
-                if (x < xSize)
-                    MeshHeightChange(index, index +1,_deltatime,Vector2.right,spaceX);
-                if (z < zSize)
-                    MeshHeightChange(index, index+ zSize + 1,_deltatime,Vector2.up, spaceY);
+                int a = z * (xSize + 1) + x;
+                int b = a + xSize + 1;
+                int c = a + 1;
 
-                
+                // 가로 이웃
+                MeshHeightChange(
+                    a, c, _deltatime, Vector2.right, spaceX);
+
+                // 다음 z 행의 이웃
+                MeshHeightChange(
+                    a, b, _deltatime, Vector2.up, spaceY);
+
+                // 삼각형의 b-c 대각선 이웃
+                MeshHeightChange(
+                    b, c, _deltatime,
+                    new Vector2(1f, -1f).normalized,
+                    diagonalSpacing);
+
+
             }
         }
         
