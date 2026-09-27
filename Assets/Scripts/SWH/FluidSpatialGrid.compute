@@ -4,22 +4,24 @@
 #pragma kernel CountNeighbors
 #pragma kernel ApplyPressure
 #pragma kernel ComputeViscosity
+#pragma kernel ComputeSeparation
 
 StructuredBuffer<float4> _Positions;
 RWStructuredBuffer<int> _ParticleCell;
 RWStructuredBuffer<int> _CellCounts;
-RWStructuredBuffer<int> _CellParticleIndices;
+RWStructuredBuffer<int> _CellHeads;
+RWStructuredBuffer<int> _ParticleNext;
 RWStructuredBuffer<int> _ParticleNeighborCounts;
 RWStructuredBuffer<float> _ParticleDensities;
 RWStructuredBuffer<float> _ParticlePressures;
 RWStructuredBuffer<float4> _Velocities;
 RWStructuredBuffer<float4> _ViscosityAccelerations;
+RWStructuredBuffer<float4> _PositionCorrections;
 
 int _ParticleCount;
 int _GridX;
 int _GridY;
 int _GridZ;
-int _CellCapacity;
 int _GridCellCount;
 float3 _GridMin;
 float _CellSize;
@@ -29,6 +31,8 @@ float _RestDensity;
 float _PressureStiffness;
 float _DeltaTime;
 float _ViscosityStrength;
+float _SeparationRadius;
+float _SeparationStrength;
 
 // 셀 번호 계산
 [numthreads(64, 1, 1)]
@@ -54,7 +58,9 @@ void ClearCells(uint3 id : SV_DispatchThreadID)
     {
         return;
     }
+
     _CellCounts[id.x] = 0;
+    _CellHeads[id.x] = -1;
 }
 
 // 셀별 입자 목록 작성
@@ -63,16 +69,17 @@ void BuildCellLists(uint3 id : SV_DispatchThreadID)
 {
     uint i = id.x;
     if (i >= (uint) _ParticleCount)
+    {
         return;
+    }
 
     int cell = _ParticleCell[i];
-    int slot;
-    InterlockedAdd(_CellCounts[cell], 1, slot);
+    int previousCount;
+    InterlockedAdd(_CellCounts[cell], 1, previousCount);
 
-    if (slot < _CellCapacity)
-    {
-        _CellParticleIndices[cell * _CellCapacity + slot] = (int) i;
-    }
+    int previous;
+    InterlockedExchange(_CellHeads[cell], (int) i, previous);
+    _ParticleNext[i] = previous;
 }
 
 // 주변 입자 수 계산
@@ -91,7 +98,7 @@ void CountNeighbors(uint3 id : SV_DispatchThreadID)
     float3 position = _Positions[i].xyz;
     float radiusSquared = _NeighborRadius * _NeighborRadius;
     int neighborCount = 0;
-    
+
     float h3 = _NeighborRadius * radiusSquared;
     float h9 = h3 * h3 * h3;
     float poly6 = 315.0 / (64.0 * 3.14159265 * h9);
@@ -108,11 +115,8 @@ void CountNeighbors(uint3 id : SV_DispatchThreadID)
                 }
 
                 int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
-                int candidates = min(_CellCounts[cellIndex], _CellCapacity);
-
-                for (int slot = 0; slot < candidates; slot++)
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
                 {
-                    int other = _CellParticleIndices[cellIndex * _CellCapacity + slot];
                     float3 delta = _Positions[other].xyz - position;
                     float distanceSquared = dot(delta, delta);
 
@@ -164,12 +168,10 @@ void ApplyPressure(uint3 id : SV_DispatchThreadID)
                 {
                     continue;
                 }
-                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
-                int candidates = min(_CellCounts[cellIndex], _CellCapacity);
 
-                for (int slot = 0; slot < candidates; slot++)
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
                 {
-                    int other = _CellParticleIndices[cellIndex * _CellCapacity + slot];
                     if (other == (int) i)
                     {
                         continue;
@@ -228,11 +230,8 @@ void ComputeViscosity(uint3 id : SV_DispatchThreadID)
                 }
 
                 int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
-                int candidates = min(_CellCounts[cellIndex], _CellCapacity);
-
-                for (int slot = 0; slot < candidates; slot++)
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
                 {
-                    int other = _CellParticleIndices[cellIndex * _CellCapacity + slot];
                     if (other == (int) i)
                     {
                         continue;
@@ -254,4 +253,64 @@ void ComputeViscosity(uint3 id : SV_DispatchThreadID)
             }
 
     _ViscosityAccelerations[i] = float4(_ViscosityStrength * sum / densityI, 0);
+}
+
+// 입자 간격 보정
+[numthreads(64, 1, 1)]
+void ComputeSeparation(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[i].xyz;
+    int ownCell = _ParticleCell[i];
+    int3 center = int3(ownCell % _GridX, (ownCell / _GridX) % _GridY, ownCell / (_GridX * _GridY));
+    float3 correction = float3(0, 0, 0);
+    int neighbors = 0;
+
+    for (int z = -1; z <= 1; z++)
+        for (int y = -1; y <= 1; y++)
+            for (int x = -1; x <= 1; x++)
+            {
+                int3 cell = center + int3(x, y, z);
+                if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+                {
+                    continue;
+                }
+
+                int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
+                {
+                    if (other == (int) i)
+                    {
+                        continue;
+                    }
+
+                    float3 delta = position - _Positions[other].xyz;
+                    float distance = length(delta);
+                    if (distance < 0.00001 || distance >= _SeparationRadius)
+                    {
+                        continue;
+                    }
+
+                    correction += (delta / distance) * (_SeparationRadius - distance);
+                    neighbors++;
+                }
+            }
+
+    if (neighbors > 0)
+    {
+        correction *= _SeparationStrength * _DeltaTime / neighbors;
+    }
+
+    float magnitude = length(correction);
+    if (magnitude > _SeparationRadius * 0.25)
+    {
+        correction *= _SeparationRadius * 0.25 / magnitude;
+    }
+
+    _PositionCorrections[i] = float4(correction, 0);
 }

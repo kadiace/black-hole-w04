@@ -3,24 +3,47 @@
 #pragma kernel ParticleToU
 #pragma kernel ParticleToW
 #pragma kernel NormalizeFaces
+#pragma kernel ClassifyCells
+#pragma kernel ApplyBoundaries
+#pragma kernel SaveFaces
+#pragma kernel ComputeDivergence
+#pragma kernel JacobiA
+#pragma kernel JacobiB
+#pragma kernel ProjectFaces
+#pragma kernel GridToParticles
 
 RWStructuredBuffer<float2> _UFaceData;
 RWStructuredBuffer<float2> _VFaceData;
 RWStructuredBuffer<float2> _WFaceData;
 StructuredBuffer<float4> _Positions;
-StructuredBuffer<float4> _Velocities;
+RWStructuredBuffer<float4> _Velocities;
 StructuredBuffer<int> _CellCounts;
-StructuredBuffer<int> _CellParticleIndices;
+StructuredBuffer<int> _CellHeads;
+StructuredBuffer<int> _ParticleNext;
+StructuredBuffer<float> _ObstacleSdf;
+RWStructuredBuffer<int> _CellStates;
+RWStructuredBuffer<float> _Divergence;
+RWStructuredBuffer<float> _PressureA;
+RWStructuredBuffer<float> _PressureB;
+RWStructuredBuffer<float2> _OldUFaceData;
+RWStructuredBuffer<float2> _OldVFaceData;
+RWStructuredBuffer<float2> _OldWFaceData;
 
 int _GridX;
 int _GridY;
 int _GridZ;
-int _CellCapacity;
 float3 _GridMin;
 float _CellSize;
 int _UFaceCount;
 int _VFaceCount;
 int _WFaceCount;
+int _GridCellCount;
+int _ParticleCount;
+int _PressureIsA;
+float _DeltaTime;
+float _FlipRatio;
+float _MaxSpeed;
+float _VelocityDamping;
 
 // 면 데이터 초기화
 [numthreads(64, 1, 1)]
@@ -76,11 +99,8 @@ void ParticleToV(uint3 id : SV_DispatchThreadID)
                 }
 
                 int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
-                int count = min(_CellCounts[cellIndex], _CellCapacity);
-
-                for (int slot = 0; slot < count; slot++)
+                for (int particle = _CellHeads[cellIndex]; particle >= 0; particle = _ParticleNext[particle])
                 {
-                    int particle = _CellParticleIndices[cellIndex * _CellCapacity + slot];
                     float3 distance = abs(_Positions[particle].xyz - facePosition);
                     float3 axisWeight = saturate(1.0 - distance / _CellSize);
                     float weight = axisWeight.x * axisWeight.y * axisWeight.z;
@@ -128,11 +148,8 @@ void ParticleToU(uint3 id : SV_DispatchThreadID)
                 }
 
                 int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
-                int count = min(_CellCounts[cellIndex], _CellCapacity);
-
-                for (int slot = 0; slot < count; slot++)
+                for (int particle = _CellHeads[cellIndex]; particle >= 0; particle = _ParticleNext[particle])
                 {
-                    int particle = _CellParticleIndices[cellIndex * _CellCapacity + slot];
                     float3 distance = abs(_Positions[particle].xyz - facePosition);
                     float3 axisWeight = saturate(1.0 - distance / _CellSize);
                     float weight = axisWeight.x * axisWeight.y * axisWeight.z;
@@ -180,12 +197,8 @@ void ParticleToW(uint3 id : SV_DispatchThreadID)
                 }
 
                 int cellIndex = cell.x + _GridX * (cell.y + _GridY * cell.z);
-                int count = min(_CellCounts[cellIndex], _CellCapacity);
-
-                for (int slot = 0; slot < count; slot++)
+                for (int particle = _CellHeads[cellIndex]; particle >= 0; particle = _ParticleNext[particle])
                 {
-                    int particle = _CellParticleIndices[cellIndex * _CellCapacity + slot];
-
                     float3 distance = abs(_Positions[particle].xyz - facePosition);
                     float3 axisWeight = saturate(1.0 - distance / _CellSize);
                     float weight = axisWeight.x * axisWeight.y * axisWeight.z;
@@ -201,9 +214,13 @@ void ParticleToW(uint3 id : SV_DispatchThreadID)
 float2 NormalizeFace(float2 face)
 {
     if (face.y > 0.000001)
+    {
         face.x /= face.y;
+    }
     else
+    {
         face = float2(0, 0);
+    }
 
     return face;
 }
@@ -215,11 +232,376 @@ void NormalizeFaces(uint3 id : SV_DispatchThreadID)
     uint i = id.x;
 
     if (i < (uint) _UFaceCount)
+    {
         _UFaceData[i] = NormalizeFace(_UFaceData[i]);
+    }
 
     if (i < (uint) _VFaceCount)
+    {
         _VFaceData[i] = NormalizeFace(_VFaceData[i]);
+    }
 
     if (i < (uint) _WFaceCount)
+    {
         _WFaceData[i] = NormalizeFace(_WFaceData[i]);
+    }
+}
+
+int CellIndex(int3 cell)
+{
+    return cell.x + _GridX * (cell.y + _GridY * cell.z);
+}
+
+int3 CellCoordinate(int index)
+{
+    return int3(index % _GridX, (index / _GridX) % _GridY, index / (_GridX * _GridY));
+}
+
+int CellState(int3 cell)
+{
+    if (cell.x < 0 || cell.x >= _GridX || cell.y < 0 || cell.y >= _GridY || cell.z < 0 || cell.z >= _GridZ)
+    {
+        return 2;
+    }
+
+    return _CellStates[CellIndex(cell)];
+}
+
+// 셀 분류
+[numthreads(64, 1, 1)]
+void ClassifyCells(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _GridCellCount)
+    {
+        return;
+    }
+
+    _CellStates[i] = _ObstacleSdf[i] <= 0.0 ? 2 : (_CellCounts[i] > 0 ? 1 : 0);
+    _PressureA[i] = 0.0;
+    _PressureB[i] = 0.0;
+    _Divergence[i] = 0.0;
+}
+
+float2 BoundFace(float2 face, int3 left, int3 right)
+{
+    if (CellState(left) == 2 || CellState(right) == 2)
+    {
+        face.x = 0.0;
+        face.y = max(face.y, 1.0);
+    }
+
+    return face;
+}
+
+// 경계 속도
+[numthreads(64, 1, 1)]
+void ApplyBoundaries(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+
+    if (i < (uint) _UFaceCount)
+    {
+        int width = _GridX + 1;
+        int x = (int) i % width;
+        int y = ((int) i / width) % _GridY;
+        int z = (int) i / (width * _GridY);
+        _UFaceData[i] = BoundFace(_UFaceData[i], int3(x - 1, y, z), int3(x, y, z));
+    }
+
+    if (i < (uint) _VFaceCount)
+    {
+        int x = (int) i % _GridX;
+        int y = ((int) i / _GridX) % (_GridY + 1);
+        int z = (int) i / (_GridX * (_GridY + 1));
+        _VFaceData[i] = BoundFace(_VFaceData[i], int3(x, y - 1, z), int3(x, y, z));
+    }
+
+    if (i < (uint) _WFaceCount)
+    {
+        int x = (int) i % _GridX;
+        int y = ((int) i / _GridX) % _GridY;
+        int z = (int) i / (_GridX * _GridY);
+        _WFaceData[i] = BoundFace(_WFaceData[i], int3(x, y, z - 1), int3(x, y, z));
+    }
+}
+
+// 투영 전 속도 저장
+[numthreads(64, 1, 1)]
+void SaveFaces(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+
+    if (i < (uint) _UFaceCount)
+    {
+        _OldUFaceData[i] = _UFaceData[i];
+    }
+
+    if (i < (uint) _VFaceCount)
+    {
+        _OldVFaceData[i] = _VFaceData[i];
+    }
+
+    if (i < (uint) _WFaceCount)
+    {
+        _OldWFaceData[i] = _WFaceData[i];
+    }
+}
+
+// 속도 발산
+[numthreads(64, 1, 1)]
+void ComputeDivergence(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _GridCellCount)
+    {
+        return;
+    }
+
+    if (_CellStates[i] != 1)
+    {
+        _Divergence[i] = 0.0;
+        return;
+    }
+
+    int3 cell = CellCoordinate((int) i);
+    int uLeft = cell.x + (_GridX + 1) * (cell.y + _GridY * cell.z);
+    int vBottom = cell.x + _GridX * (cell.y + (_GridY + 1) * cell.z);
+    int wBack = CellIndex(cell);
+
+    float difference = _UFaceData[uLeft + 1].x - _UFaceData[uLeft].x;
+    difference += _VFaceData[vBottom + _GridX].x - _VFaceData[vBottom].x;
+    difference += _WFaceData[wBack + _GridX * _GridY].x - _WFaceData[wBack].x;
+    _Divergence[i] = difference / _CellSize;
+}
+
+void AddNeighbor(int3 cell, bool readA, inout float sum, inout int diagonal)
+{
+    int state = CellState(cell);
+    if (state == 2)
+    {
+        return;
+    }
+
+    diagonal++;
+    if (state == 1)
+    {
+        int index = CellIndex(cell);
+        sum += readA ? _PressureA[index] : _PressureB[index];
+    }
+}
+
+float SolvePressure(int index, bool readA)
+{
+    if (_CellStates[index] != 1)
+    {
+        return 0.0;
+    }
+
+    int3 cell = CellCoordinate(index);
+    float sum = 0.0;
+    int diagonal = 0;
+    AddNeighbor(cell + int3(-1, 0, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(1, 0, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, -1, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, 1, 0), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, 0, -1), readA, sum, diagonal);
+    AddNeighbor(cell + int3(0, 0, 1), readA, sum, diagonal);
+
+    if (diagonal == 0)
+    {
+        return 0.0;
+    }
+
+    return (sum - _Divergence[index] * _CellSize * _CellSize / max(_DeltaTime, 0.000001)) / diagonal;
+}
+
+// 압력 반복
+[numthreads(64, 1, 1)]
+void JacobiA(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < (uint) _GridCellCount)
+    {
+        _PressureB[id.x] = SolvePressure((int) id.x, true);
+    }
+}
+
+[numthreads(64, 1, 1)]
+void JacobiB(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < (uint) _GridCellCount)
+    {
+        _PressureA[id.x] = SolvePressure((int) id.x, false);
+    }
+}
+
+float CellPressure(int3 cell)
+{
+    if (CellState(cell) != 1)
+    {
+        return 0.0;
+    }
+
+    int index = CellIndex(cell);
+    return _PressureIsA != 0 ? _PressureA[index] : _PressureB[index];
+}
+
+float2 ProjectFace(float2 face, int3 left, int3 right)
+{
+    int leftState = CellState(left);
+    int rightState = CellState(right);
+
+    if (leftState == 2 || rightState == 2)
+    {
+        return float2(0.0, max(face.y, 1.0));
+    }
+
+    if (leftState != 1 && rightState != 1)
+    {
+        return float2(0.0, 0.0);
+    }
+
+    face.x -= _DeltaTime * (CellPressure(right) - CellPressure(left)) / _CellSize;
+    face.y = max(face.y, 1.0);
+    return face;
+}
+
+// 압력 투영
+[numthreads(64, 1, 1)]
+void ProjectFaces(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+
+    if (i < (uint) _UFaceCount)
+    {
+        int width = _GridX + 1;
+        int x = (int) i % width;
+        int y = ((int) i / width) % _GridY;
+        int z = (int) i / (width * _GridY);
+        _UFaceData[i] = ProjectFace(_UFaceData[i], int3(x - 1, y, z), int3(x, y, z));
+    }
+
+    if (i < (uint) _VFaceCount)
+    {
+        int x = (int) i % _GridX;
+        int y = ((int) i / _GridX) % (_GridY + 1);
+        int z = (int) i / (_GridX * (_GridY + 1));
+        _VFaceData[i] = ProjectFace(_VFaceData[i], int3(x, y - 1, z), int3(x, y, z));
+    }
+
+    if (i < (uint) _WFaceCount)
+    {
+        int x = (int) i % _GridX;
+        int y = ((int) i / _GridX) % _GridY;
+        int z = (int) i / (_GridX * _GridY);
+        _WFaceData[i] = ProjectFace(_WFaceData[i], int3(x, y, z - 1), int3(x, y, z));
+    }
+}
+
+void SampleComponent(float3 position, int axis, bool previous, out float value, out bool valid)
+{
+    float3 coordinate = (position - _GridMin) / _CellSize;
+    int3 size;
+
+    if (axis == 0)
+    {
+        coordinate -= float3(0.0, 0.5, 0.5);
+        size = int3(_GridX + 1, _GridY, _GridZ);
+    }
+    else if (axis == 1)
+    {
+        coordinate -= float3(0.5, 0.0, 0.5);
+        size = int3(_GridX, _GridY + 1, _GridZ);
+    }
+    else
+    {
+        coordinate -= float3(0.5, 0.5, 0.0);
+        size = int3(_GridX, _GridY, _GridZ + 1);
+    }
+
+    int3 baseCell = (int3) floor(coordinate);
+    float3 fraction = coordinate - (float3) baseCell;
+    float sum = 0.0;
+    float weightSum = 0.0;
+
+    for (int z = 0; z <= 1; z++)
+        for (int y = 0; y <= 1; y++)
+            for (int x = 0; x <= 1; x++)
+            {
+                int3 cell = baseCell + int3(x, y, z);
+                if (cell.x < 0 || cell.x >= size.x || cell.y < 0 || cell.y >= size.y || cell.z < 0 || cell.z >= size.z)
+                {
+                    continue;
+                }
+
+                int index = cell.x + size.x * (cell.y + size.y * cell.z);
+                float2 face;
+                if (axis == 0)
+                {
+                    face = previous ? _OldUFaceData[index] : _UFaceData[index];
+                }
+                else if (axis == 1)
+                {
+                    face = previous ? _OldVFaceData[index] : _VFaceData[index];
+                }
+                else
+                {
+                    face = previous ? _OldWFaceData[index] : _WFaceData[index];
+                }
+
+                if (face.y <= 0.000001)
+                {
+                    continue;
+                }
+
+                float3 weightAxis = lerp(1.0 - fraction, fraction, float3(x, y, z));
+                float weight = weightAxis.x * weightAxis.y * weightAxis.z;
+                sum += weight * face.x;
+                weightSum += weight;
+            }
+
+    valid = weightSum > 0.000001;
+    value = valid ? sum / weightSum : 0.0;
+}
+
+// 격자 속도 전달
+[numthreads(64, 1, 1)]
+void GridToParticles(uint3 id : SV_DispatchThreadID)
+{
+    uint i = id.x;
+    if (i >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[i].xyz;
+    float3 particleVelocity = _Velocities[i].xyz;
+    float3 result = particleVelocity;
+
+    for (int axis = 0; axis < 3; axis++)
+    {
+        float picVelocity;
+        float oldGridVelocity;
+        bool hasNew;
+        bool hasOld;
+        SampleComponent(position, axis, false, picVelocity, hasNew);
+        SampleComponent(position, axis, true, oldGridVelocity, hasOld);
+
+        if (hasNew)
+        {
+            float flipVelocity = particleVelocity[axis] + picVelocity - (hasOld ? oldGridVelocity : picVelocity);
+            result[axis] = lerp(picVelocity, flipVelocity, saturate(_FlipRatio));
+        }
+    }
+
+    result *= max(0.0, 1.0 - _VelocityDamping * _DeltaTime);
+    float speed = length(result);
+    if (speed > _MaxSpeed)
+    {
+        result *= _MaxSpeed / speed;
+    }
+
+    float4 velocity = _Velocities[i];
+    velocity.xyz = result;
+    _Velocities[i] = velocity;
 }
