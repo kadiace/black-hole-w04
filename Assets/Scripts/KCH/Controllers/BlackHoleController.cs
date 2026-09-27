@@ -13,10 +13,7 @@ public class BlackHoleController : MonoBehaviour
     private ParticleSystem _convergence;
 
     [Header("Activate")]
-    [SerializeField]
-    private float _time;
-    [SerializeField]
-    private float _scalingDuration;
+    private bool _processEliminate;
     private float _timer;
     private bool _isScaling;
     private ScalingType _scalingType;
@@ -36,9 +33,9 @@ public class BlackHoleController : MonoBehaviour
         _inner.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         _eventHorizon.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         ParticleSystem.ShapeModule shape = _convergence.shape;
-        shape.scale = Vector3.one;
+        shape.scale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         ParticleSystem.MainModule main = _convergence.main;
-        main.startLifetime = 1 / 30;
+        main.startLifetime = Managers.Gravity.GravityStat.InitScale / 30;
 
         _outer.OnTriggerEntered += OuterEnter;
         _inner.OnTriggerEntered += InnerEnter;
@@ -49,23 +46,27 @@ public class BlackHoleController : MonoBehaviour
 
     void Update()
     {
-        _timer -= Time.deltaTime;
-        if (_timer < 0f)
+        if (_timer >= 0f)
+            _timer -= Time.deltaTime;
+        else if (!_processEliminate)
+        {
             ProcessEliminate();
+            _processEliminate = true;
+        }
 
         if (_isScaling)
         {
             _scalingElapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(_scalingElapsed / _scalingDuration);
-
-            t = Mathf.Pow(t, 20f);
+            float duration = _scalingType == ScalingType.Expand ? Managers.Gravity.GravityStat.ExpandDuration : Managers.Gravity.GravityStat.ShrinkDuration;
+            float t = Mathf.Clamp01(_scalingElapsed / duration);
+            float curveT = _scalingType == ScalingType.Expand ? Managers.Gravity.GravityStat.BlackHoleExpandCurve(t) : Managers.Gravity.GravityStat.BlackHoleShrinkCurve(t);
 
             (float startOuterScale, float startInnerScale, float startEventHorizonScale) = _startScale;
             (float targetOuterScale, float targetInnerScale, float targetEventHorizonScale) = _targetScale;
 
-            float outerScale = Mathf.Lerp(startOuterScale, targetOuterScale, t);
-            float innerScale = Mathf.Lerp(startInnerScale, targetInnerScale, t);
-            float eventHorizonScale = Mathf.Lerp(startEventHorizonScale, targetEventHorizonScale, t);
+            float outerScale = Mathf.LerpUnclamped(startOuterScale, targetOuterScale, curveT);
+            float innerScale = Mathf.LerpUnclamped(startInnerScale, targetInnerScale, curveT);
+            float eventHorizonScale = Mathf.LerpUnclamped(startEventHorizonScale, targetEventHorizonScale, curveT);
 
             _outer.transform.localScale = outerScale * Vector3.one;
             _inner.transform.localScale = innerScale * Vector3.one;
@@ -92,18 +93,19 @@ public class BlackHoleController : MonoBehaviour
 
     void OnEnable()
     {
+        _processEliminate = false;
         _isEliminating = false;
         _isScaling = false;
         _outer.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         _inner.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         _eventHorizon.transform.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         ParticleSystem.ShapeModule shape = _convergence.shape;
-        shape.scale = Vector3.one;
+        shape.scale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
         ParticleSystem.MainModule main = _convergence.main;
-        main.startLifetime = 1 / 30;
+        main.startLifetime = Managers.Gravity.GravityStat.InitScale / 30;
 
-        _timer = _time;
-        SetActive(Managers.Gravity.WhiteHole == null ? false : Managers.Gravity.IsWhiteHoleEnabled);
+        _timer = Managers.Gravity.GravityStat.ExistDuration;
+        SetActive(Managers.Gravity.WhiteHole != null && Managers.Gravity.IsWhiteHoleEnabled);
     }
 
     public void SetActive(bool isActivated)
@@ -120,6 +122,7 @@ public class BlackHoleController : MonoBehaviour
 
     public void ProcessEliminate()
     {
+        Managers.Gravity.WhiteHole.SetActive(false);
         if (_isEliminating)
             return;
         _isEliminating = true;
@@ -139,12 +142,11 @@ public class BlackHoleController : MonoBehaviour
     {
         gameObject.SetActive(false);
         OnRemoved?.Invoke();
-        Managers.Gravity.WhiteHole.SetActive(false);
     }
 
     private void OuterEnter(Collider other)
     {
-        if (!Managers.Gravity.IsWhiteHoleEnabled)
+        if (!Managers.Gravity.IsWhiteHoleEnabled || _isScaling)
             return;
 
         GravityController gravityController = other.GetComponentInParent<GravityController>();
@@ -156,7 +158,7 @@ public class BlackHoleController : MonoBehaviour
 
     private void InnerEnter(Collider other)
     {
-        if (!Managers.Gravity.IsWhiteHoleEnabled)
+        if (!Managers.Gravity.IsWhiteHoleEnabled || _isScaling)
             return;
 
         // 1. Rotate Player up to -GravityDir
@@ -171,7 +173,7 @@ public class BlackHoleController : MonoBehaviour
 
     private void EventHorizonEnter(Collider other)
     {
-        if (!Managers.Gravity.IsWhiteHoleEnabled)
+        if (!Managers.Gravity.IsWhiteHoleEnabled || _isScaling)
             return;
 
         Rigidbody rb = other.GetComponentInParent<Rigidbody>();

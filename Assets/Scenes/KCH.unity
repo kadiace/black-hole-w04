@@ -604,7 +604,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraRotationController
   _playerController: {fileID: 8968958581672093497}
   _cameraTarget: {fileID: 4501196079783407252}
-  _gravityRotationDamping: 10
+  _gravityRotationDamping: 1
+  _yawRotationDamping: 0.1
 --- !u!1001 &6912942552423191577
 PrefabInstance:
   m_ObjectHideFlags: 0

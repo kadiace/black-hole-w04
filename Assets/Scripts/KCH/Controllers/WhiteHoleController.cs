@@ -17,14 +17,15 @@ public class WhiteHoleController : MonoBehaviour
     private Material _offMaterial;
 
     [Header("Activate")]
-    [SerializeField]
-    private float _scalingDuration;
+    private bool _processEliminate;
     private bool _isScaling;
     private ScalingType _scalingType;
     private float _scalingElapsed;
     private float _startScale;
     private float _targetScale;
     private bool _isEliminating;
+
+    public bool ProcessEliminated => _processEliminate;
 
     void Awake()
     {
@@ -36,10 +37,11 @@ public class WhiteHoleController : MonoBehaviour
         if (_isScaling)
         {
             _scalingElapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(_scalingElapsed / _scalingDuration);
+            float duration = _scalingType == ScalingType.Expand ? Managers.Gravity.GravityStat.ExpandDuration : Managers.Gravity.GravityStat.ShrinkDuration;
+            float t = Mathf.Clamp01(_scalingElapsed / duration);
+            float curveT = Managers.Gravity.GravityStat.WhiteHoleCurve(t);
 
-            t = Mathf.Pow(t, 20f);
-            float eventHorizonScale = Mathf.Lerp(_startScale, _targetScale, t);
+            float eventHorizonScale = Mathf.LerpUnclamped(_startScale, _targetScale, curveT);
             _eventHorizon.localScale = eventHorizonScale * Vector3.one;
 
             if (t < 1)
@@ -56,6 +58,7 @@ public class WhiteHoleController : MonoBehaviour
 
     void OnEnable()
     {
+        Managers.Gravity.ProcessWhiteHoleEliminate = false;
         _isEliminating = false;
         _isScaling = false;
         _eventHorizon.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
@@ -76,6 +79,7 @@ public class WhiteHoleController : MonoBehaviour
 
     public void ProcessEliminate()
     {
+        Managers.Gravity.BlackHole.SetActive(false);
         if (_isEliminating)
             return;
         _isEliminating = true;
@@ -94,6 +98,5 @@ public class WhiteHoleController : MonoBehaviour
     private void Eliminate()
     {
         gameObject.SetActive(false);
-        Managers.Gravity.BlackHole.SetActive(false);
     }
 }
