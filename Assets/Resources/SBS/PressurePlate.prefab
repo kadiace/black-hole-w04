@@ -76,7 +76,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  triggerChecker: {fileID: 0}
+  triggerChecker: {fileID: 4026776955707047281}
 --- !u!1 &498353074552437707
 GameObject:
   m_ObjectHideFlags: 0
