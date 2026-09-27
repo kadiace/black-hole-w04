@@ -1,0 +1,92 @@
+#pragma kernel ClearMissingTiles
+#pragma kernel CollectParticleTiles
+
+StructuredBuffer<float4> _Positions;
+StructuredBuffer<int4> _TileHash;
+RWStructuredBuffer<int4> _ParticleTiles;
+RWStructuredBuffer<int> _MissingTileCount;
+
+int _ParticleCount;
+int _TileHashCapacity;
+int _CellsPerTile;
+float _CellSize;
+int _DespawnBelowY;
+float _DespawnY;
+
+// 타일 좌표
+int3 WorldToTile(float3 position)
+{
+    float tileSize = _CellSize * _CellsPerTile;
+    return (int3) floor(position / tileSize);
+}
+
+// 타일 검색
+int FindTileIndex(int3 tile)
+{
+    if (_TileHashCapacity <= 0)
+    {
+        return -1;
+    }
+
+    uint hash = ((uint) tile.x * 73856093u) ^ ((uint) tile.y * 19349663u) ^ ((uint) tile.z * 83492791u);
+    hash ^= hash >> 16;
+
+    uint mask = (uint) (_TileHashCapacity - 1);
+    uint slot = hash & mask;
+
+    for (int probe = 0; probe < _TileHashCapacity; probe++)
+    {
+        int4 entry = _TileHash[slot];
+
+        if (entry.w < 0)
+        {
+            return -1;
+        }
+
+        if (entry.x == tile.x && entry.y == tile.y && entry.z == tile.z)
+        {
+            return entry.w;
+        }
+
+        slot = (slot + 1u) & mask;
+    }
+
+    return -1;
+}
+
+// 누락 수 초기화
+[numthreads(1, 1, 1)]
+void ClearMissingTiles(uint3 id : SV_DispatchThreadID)
+{
+    _MissingTileCount[0] = 0;
+}
+
+// 입자 타일 수집
+[numthreads(64, 1, 1)]
+void CollectParticleTiles(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+
+    if (_DespawnBelowY != 0 && position.y <= _DespawnY)
+    {
+        _ParticleTiles[index] = int4(0, 0, 0, -2);
+        return;
+    }
+
+    int3 tile = WorldToTile(position);
+    int tileIndex = FindTileIndex(tile);
+    _ParticleTiles[index] = int4(tile, tileIndex);
+
+    if (tileIndex < 0)
+    {
+        int previousCount;
+        InterlockedAdd(_MissingTileCount[0], 1, previousCount);
+    }
+}

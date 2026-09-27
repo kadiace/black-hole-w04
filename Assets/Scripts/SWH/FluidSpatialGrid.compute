@@ -1,0 +1,451 @@
+#pragma kernel AssignCells
+#pragma kernel ClearCells
+#pragma kernel BuildCellLists
+#pragma kernel CountNeighbors
+#pragma kernel ApplyPressure
+#pragma kernel ComputeViscosity
+#pragma kernel ComputeSeparation
+
+StructuredBuffer<float4> _Positions;
+StructuredBuffer<int4> _TileHash;
+RWStructuredBuffer<int> _ParticleCell;
+RWStructuredBuffer<int> _CellCounts;
+RWStructuredBuffer<int> _CellHeads;
+RWStructuredBuffer<int> _ParticleNext;
+RWStructuredBuffer<int> _ParticleNeighborCounts;
+RWStructuredBuffer<float> _ParticleDensities;
+RWStructuredBuffer<float> _ParticlePressures;
+RWStructuredBuffer<float4> _Velocities;
+RWStructuredBuffer<float4> _ViscosityAccelerations;
+RWStructuredBuffer<float4> _PositionCorrections;
+
+int _ParticleCount;
+int _GridCellCount;
+int _TileHashCapacity;
+float _CellSize;
+float _NeighborRadius;
+float _ParticleMass;
+float _RestDensity;
+float _PressureStiffness;
+float _DeltaTime;
+float _ViscosityStrength;
+float _SeparationRadius;
+float _SeparationStrength;
+
+static const int CellsPerTile = 8;
+static const int CellCountPerTile = 512;
+
+// 월드 셀
+int3 WorldToCell(float3 position)
+{
+    return (int3) floor(position / _CellSize);
+}
+
+// 활성 타일 검색
+int FindTileIndex(int3 tile)
+{
+    if (_TileHashCapacity <= 0)
+    {
+        return -1;
+    }
+
+    uint hash = ((uint) tile.x * 73856093u) ^ ((uint) tile.y * 19349663u) ^ ((uint) tile.z * 83492791u);
+    hash ^= hash >> 16;
+
+    uint mask = (uint) (_TileHashCapacity - 1);
+    uint slot = hash & mask;
+
+    for (int probe = 0; probe < _TileHashCapacity; probe++)
+    {
+        int4 entry = _TileHash[slot];
+
+        if (entry.w < 0)
+        {
+            return -1;
+        }
+
+        if (entry.x == tile.x && entry.y == tile.y && entry.z == tile.z)
+        {
+            return entry.w;
+        }
+
+        slot = (slot + 1u) & mask;
+    }
+
+    return -1;
+}
+
+// 셀 주소
+int WorldCellToIndex(int3 worldCell)
+{
+    int3 local = worldCell & int3(7, 7, 7);
+    int3 tile = (worldCell - local) / CellsPerTile;
+    int tileIndex = FindTileIndex(tile);
+
+    if (tileIndex < 0)
+    {
+        return -1;
+    }
+
+    return tileIndex * CellCountPerTile + local.x + CellsPerTile * (local.y + CellsPerTile * local.z);
+}
+
+// 셀 초기화
+[numthreads(64, 1, 1)]
+void ClearCells(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _GridCellCount)
+    {
+        return;
+    }
+
+    _CellCounts[id.x] = 0;
+    _CellHeads[id.x] = -1;
+}
+
+// 입자 셀 지정
+[numthreads(64, 1, 1)]
+void AssignCells(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    _ParticleCell[index] = WorldCellToIndex(WorldToCell(_Positions[index].xyz));
+}
+
+// 입자 목록 구성
+[numthreads(64, 1, 1)]
+void BuildCellLists(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    int cellIndex = _ParticleCell[index];
+
+    if (cellIndex < 0)
+    {
+        _ParticleNext[index] = -1;
+        return;
+    }
+
+    int previousCount;
+    InterlockedAdd(_CellCounts[cellIndex], 1, previousCount);
+
+    int previousParticle;
+    InterlockedExchange(_CellHeads[cellIndex], (int) index, previousParticle);
+    _ParticleNext[index] = previousParticle;
+}
+
+// 이웃 밀도
+[numthreads(64, 1, 1)]
+void CountNeighbors(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    if (_ParticleCell[index] < 0)
+    {
+        _ParticleNeighborCounts[index] = 0;
+        _ParticleDensities[index] = 0.0;
+        _ParticlePressures[index] = 0.0;
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+    int3 center = WorldToCell(position);
+    float radiusSquared = _NeighborRadius * _NeighborRadius;
+    float h3 = _NeighborRadius * radiusSquared;
+    float h9 = h3 * h3 * h3;
+    float poly6 = 315.0 / (64.0 * 3.14159265 * h9);
+
+    int neighborCount = 0;
+    float density = 0.0;
+
+    for (int z = -1; z <= 1; z++)
+    {
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                int cellIndex = WorldCellToIndex(center + int3(x, y, z));
+
+                if (cellIndex < 0)
+                {
+                    continue;
+                }
+
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
+                {
+                    float3 delta = _Positions[other].xyz - position;
+                    float distanceSquared = dot(delta, delta);
+
+                    if (distanceSquared >= radiusSquared)
+                    {
+                        continue;
+                    }
+
+                    if (other != (int) index)
+                    {
+                        neighborCount++;
+                    }
+
+                    float difference = radiusSquared - distanceSquared;
+                    density += _ParticleMass * poly6 * difference * difference * difference;
+                }
+            }
+        }
+    }
+
+    _ParticleNeighborCounts[index] = neighborCount;
+    _ParticleDensities[index] = density;
+    _ParticlePressures[index] = _PressureStiffness * max(density - _RestDensity, 0.0);
+}
+
+// SPH 점성
+[numthreads(64, 1, 1)]
+void ComputeViscosity(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    if (_ParticleCell[index] < 0)
+    {
+        _ViscosityAccelerations[index] = float4(0, 0, 0, 0);
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+    float3 velocity = _Velocities[index].xyz;
+    int3 center = WorldToCell(position);
+    float h = _NeighborRadius;
+    float h2 = h * h;
+    float h3 = h2 * h;
+    float kernelScale = 45.0 / (3.14159265 * h3 * h3);
+    float densityI = max(_ParticleDensities[index], 0.0001);
+    float3 sum = float3(0, 0, 0);
+
+    for (int z = -1; z <= 1; z++)
+    {
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                int cellIndex = WorldCellToIndex(center + int3(x, y, z));
+
+                if (cellIndex < 0)
+                {
+                    continue;
+                }
+
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
+                {
+                    if (other == (int) index)
+                    {
+                        continue;
+                    }
+
+                    float3 delta = position - _Positions[other].xyz;
+                    float distanceSquared = dot(delta, delta);
+
+                    if (distanceSquared >= h2)
+                    {
+                        continue;
+                    }
+
+                    float distance = sqrt(distanceSquared);
+                    float densityJ = max(_ParticleDensities[other], 0.0001);
+                    float weight = kernelScale * (h - distance);
+                    sum += _ParticleMass * (_Velocities[other].xyz - velocity) * (weight / densityJ);
+                }
+            }
+        }
+    }
+
+    _ViscosityAccelerations[index] = float4(_ViscosityStrength * sum / densityI, 0);
+}
+
+// SPH 압력
+[numthreads(64, 1, 1)]
+void ApplyPressure(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount || _ParticleCell[index] < 0)
+    {
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+    int3 center = WorldToCell(position);
+    float densityI = max(_ParticleDensities[index], 0.0001);
+    float pressureI = _ParticlePressures[index];
+    float h = _NeighborRadius;
+    float h3 = h * h * h;
+    float gradientScale = 45.0 / (3.14159265 * h3 * h3);
+    float3 acceleration = float3(0, 0, 0);
+
+    for (int z = -1; z <= 1; z++)
+    {
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                int cellIndex = WorldCellToIndex(center + int3(x, y, z));
+
+                if (cellIndex < 0)
+                {
+                    continue;
+                }
+
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
+                {
+                    if (other == (int) index)
+                    {
+                        continue;
+                    }
+
+                    float3 delta = position - _Positions[other].xyz;
+                    float distance = length(delta);
+
+                    if (distance < 0.00001 || distance >= h)
+                    {
+                        continue;
+                    }
+
+                    float densityJ = max(_ParticleDensities[other], 0.0001);
+                    float pairPressure = (pressureI + _ParticlePressures[other]) / (2.0 * densityI * densityJ);
+                    float remaining = h - distance;
+                    acceleration += _ParticleMass * pairPressure * gradientScale * remaining * remaining * (delta / distance);
+                }
+            }
+        }
+    }
+
+    float4 velocity = _Velocities[index];
+    velocity.xyz += (acceleration + _ViscosityAccelerations[index].xyz) * _DeltaTime;
+    _Velocities[index] = velocity;
+}
+
+// 겹친 입자 방향
+float3 PairDirection(int particle, int other, float3 delta, float distance)
+{
+    if (distance > 0.00001)
+    {
+        return delta / distance;
+    }
+
+    uint first = (uint) min(particle, other);
+    uint second = (uint) max(particle, other);
+    uint seed = first * 747796405u ^ second * 2891336453u;
+    seed ^= seed >> 16;
+
+    float3 direction = float3(
+        (float) (seed & 255u) - 127.5,
+        (float) ((seed >> 8) & 255u) - 127.5,
+        (float) ((seed >> 16) & 255u) - 127.5);
+
+    float magnitude = length(direction);
+
+    if (magnitude < 0.00001)
+    {
+        direction = float3(0, 1, 0);
+    }
+    else
+    {
+        direction /= magnitude;
+    }
+
+    return particle < other ? direction : -direction;
+}
+
+// 입자 간격
+[numthreads(64, 1, 1)]
+void ComputeSeparation(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    if (_ParticleCell[index] < 0 || _SeparationRadius <= 0.0)
+    {
+        _PositionCorrections[index] = float4(0, 0, 0, 0);
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+    int3 center = WorldToCell(position);
+    float radiusSquared = _SeparationRadius * _SeparationRadius;
+    float3 correction = float3(0, 0, 0);
+    int neighbors = 0;
+
+    for (int z = -1; z <= 1; z++)
+    {
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                int cellIndex = WorldCellToIndex(center + int3(x, y, z));
+
+                if (cellIndex < 0)
+                {
+                    continue;
+                }
+
+                for (int other = _CellHeads[cellIndex]; other >= 0; other = _ParticleNext[other])
+                {
+                    if (other == (int) index)
+                    {
+                        continue;
+                    }
+
+                    float3 delta = position - _Positions[other].xyz;
+                    float distanceSquared = dot(delta, delta);
+
+                    if (distanceSquared >= radiusSquared)
+                    {
+                        continue;
+                    }
+
+                    float distance = sqrt(distanceSquared);
+                    float3 direction = PairDirection((int) index, other, delta, distance);
+                    correction += direction * (_SeparationRadius - distance);
+                    neighbors++;
+                }
+            }
+        }
+    }
+
+    if (neighbors > 0)
+    {
+        correction *= _SeparationStrength / (float) neighbors;
+    }
+
+    float magnitude = length(correction);
+    float maxCorrection = _SeparationRadius * 0.25;
+
+    if (magnitude > maxCorrection)
+    {
+        correction *= maxCorrection / magnitude;
+    }
+
+    _PositionCorrections[index] = float4(correction, 0);
+}
