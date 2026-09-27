@@ -285,17 +285,14 @@ public class PlayerController : MonoBehaviour, IPressable
     private void ProcessInteractive()
     {
         if (!Managers.Input.InteractPressed) return;
-        // ���� ī�޶� ����Ʈ �߾� ���� ���� �߽�!!!!!!!!
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green);
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, LayerMask.NameToLayer("interactive"), QueryTriggerInteraction.Ignore))
         {
-            // Ÿ�� üũ
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
 
-            // Ÿ�� ��ȣ�ۿ� �۵�
             if (interactable != null)
                 interactable.Interact();
 
