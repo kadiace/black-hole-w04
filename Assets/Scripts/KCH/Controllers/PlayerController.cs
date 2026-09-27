@@ -90,7 +90,7 @@ public class PlayerController : MonoBehaviour, IPressable
         ProcessJumpInput();
         ProcessMoveInput();
         ProcessSprintInput();
-        ProcessInteractive();
+        ProcessInteract();
     }
 
     void FixedUpdate()
@@ -282,7 +282,7 @@ public class PlayerController : MonoBehaviour, IPressable
         return right * _moveInput.x + forward * _moveInput.y;
     }
 
-    private void ProcessInteractive()
+    private void ProcessInteract()
     {
         if (!Managers.Input.InteractPressed) return;
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
