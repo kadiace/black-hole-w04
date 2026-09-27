@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(GravityController))]
-public class PlayerController : MonoBehaviour, IPressable
+public class PlayerController : MonoBehaviour, IPressable, IInteractor
 {
     [Header("Camera")]
     [SerializeField]
@@ -69,6 +69,10 @@ public class PlayerController : MonoBehaviour, IPressable
     [Header("Interactive")]
     [SerializeField]
     private float interactDistance = 5f;
+    [SerializeField]
+    private Transform snapAt;
+
+    public Transform SnapAt => snapAt;
 
 
     [Header("Component")]
@@ -294,7 +298,7 @@ public class PlayerController : MonoBehaviour, IPressable
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
 
             if (interactable != null)
-                interactable.Interact();
+                interactable.Interact(this);
 
             return;
         }

@@ -34,7 +34,7 @@ public class Interactive_Button : MonoBehaviour, IInteractable
         }
     }
 
-    public void Interact()
+    public void Interact(IInteractor interactor)
     {
         switch (buttonType)
         {

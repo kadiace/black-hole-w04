@@ -26,36 +26,36 @@ public class CubeGimmick : MonoBehaviour, IPressable, IInteractable
         bc = GetComponent<BoxCollider>();
     }
 
-    public void Interact()
+    public void Interact(IInteractor interactor)
     {
-        //if (Time.time < nextInteractTime)
-        //    return false;
-        //
-        //transform.SetParent(interactor.SnapAt);
-        //transform.localPosition = Vector3.zero;
-        //
-        //rb.isKinematic = true;
-        //rb.angularVelocity = Vector3.zero;
-        //rb.linearVelocity = Vector3.zero;
-        //
-        //return true;
+        if (Time.time < nextInteractTime)
+            return;
+        
+        transform.SetParent(interactor.SnapAt);
+        transform.localPosition = Vector3.zero;
+        
+        rb.isKinematic = true;
+        rb.angularVelocity = Vector3.zero;
+        rb.linearVelocity = Vector3.zero;
+        
+        return;
     }
 
-    public void Release()
+    public void Release(IInteractor interactor)
     {
-        //if (!transform.IsChildOf(interactor.SnapAt))
-        //    return;
-        //
-        //transform.SetParent(null);
-        //
-        //rb.angularVelocity = Vector3.zero;
-        //rb.linearVelocity = Vector3.zero;
-        //
-        //ResolveGroundOverlap();
-        //
-        //rb.isKinematic = false;
-        //
-        //nextInteractTime = Time.time + regrabDelay;
+        if (!transform.IsChildOf(interactor.SnapAt))
+            return;
+        
+        transform.SetParent(null);
+        
+        rb.angularVelocity = Vector3.zero;
+        rb.linearVelocity = Vector3.zero;
+        
+        ResolveGroundOverlap();
+        
+        rb.isKinematic = false;
+        
+        nextInteractTime = Time.time + regrabDelay;
     }
 
     private void ResolveGroundOverlap()
