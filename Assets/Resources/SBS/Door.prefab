@@ -80,7 +80,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   timer: 0
-  isOpen: 1
+  isOpen: 0
 --- !u!1 &3849796890167422491
 GameObject:
   m_ObjectHideFlags: 0
@@ -260,7 +260,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c33fa2d833e21ed45aa2b5929e7c972e, type: 2}
+  - {fileID: 2100000, guid: 51aad37e3dd181744b5de062cf3c4f7b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -596,7 +596,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c33fa2d833e21ed45aa2b5929e7c972e, type: 2}
+  - {fileID: 2100000, guid: 51aad37e3dd181744b5de062cf3c4f7b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
