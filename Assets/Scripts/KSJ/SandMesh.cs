@@ -1,4 +1,3 @@
-using NUnit.Framework.Internal;
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -17,7 +16,7 @@ public class SandMesh : MonoBehaviour
     private Mesh m_mesh;
     private Vector3[] m_verticies, m_modifiedVerts;
 
-    float m_timer =0;
+    float m_timer = 0;
     [SerializeField]
     private float simulateTime = 2;
     [SerializeField]
@@ -34,13 +33,15 @@ public class SandMesh : MonoBehaviour
     public SphereCollider flowTrigger;
     [SerializeField] private float lowerSpeed = 100f;
 
+    [SerializeField] private float minimumHeight = -5f;
 
 
-    [SerializeField] private float flowRate =1;
+
+    [SerializeField] private float flowRate = 1;
 
     float[] heightChange;
 
-    public bool losesand = false;
+    public bool loseSand = false;
 
 
     private void Start()
@@ -48,7 +49,7 @@ public class SandMesh : MonoBehaviour
         m_mesh = GetComponentInChildren<MeshFilter>().mesh;
         m_verticies = m_mesh.vertices;
         m_modifiedVerts = m_mesh.vertices;
-        
+
 
         if (GetComponent<MeshMake>())
         {
@@ -64,35 +65,26 @@ public class SandMesh : MonoBehaviour
             xSize = GetComponent<WhiteholeMeshMake>().xSize;
             zSize = GetComponent<WhiteholeMeshMake>().zSize;
         }
-        
+
     }
 
     void RecalculateMesh()
     {
-        if (losesand)
+        if (loseSand)
         {
             KeepBound();
         }
         m_mesh.vertices = m_modifiedVerts;
-        
+
         GetComponentInChildren<MeshCollider>().sharedMesh = m_mesh;
         m_mesh.RecalculateNormals();
 
-        
+
     }
 
     private void Update()
     {
-        //if (Mouse.current.rightButton.isPressed)
-        //{
-        //    RightClick();
-        //    RecalculateMesh();
-        //}
-        //else if (Mouse.current.leftButton.isPressed)
-        //{
-        //    LeftClick();
-        //    RecalculateMesh();
-        //}
+
         m_timer += Time.deltaTime;
         if (m_timer >= simulateTime)
         {
@@ -102,7 +94,7 @@ public class SandMesh : MonoBehaviour
             RecalculateMesh();
             m_timer = 0;
         }
-        
+
 
     }
 
@@ -124,11 +116,11 @@ public class SandMesh : MonoBehaviour
 
                 if (distance.sqrMagnitude < radius)
                 {
-                   
-                        m_modifiedVerts[v] = m_modifiedVerts[v] + (Vector3.up * force) / smoothingFactor;
-                        
-                    
-                   
+
+                    m_modifiedVerts[v] = m_modifiedVerts[v] + (Vector3.up * force) / smoothingFactor;
+
+
+
                 }
             }
         }
@@ -152,16 +144,16 @@ public class SandMesh : MonoBehaviour
 
                 if (distance.sqrMagnitude < radius)
                 {
-                    
-                    
-                        m_modifiedVerts[v] = m_modifiedVerts[v] + (Vector3.down * force) / smoothingFactor;
-                        
-                    
+
+
+                    m_modifiedVerts[v] = m_modifiedVerts[v] + (Vector3.down * force) / smoothingFactor;
+
+
                 }
             }
 
 
-            
+
         }
     }
 
@@ -191,13 +183,13 @@ public class SandMesh : MonoBehaviour
     //        }
 
     //    RecalculateMesh();
-        
+
     //}
 
     public void SandUp(RaycastHit hit)
     {
         if (m_modifiedVerts == null || GetComponentInChildren<MeshFilter>() == null)
-            return;
+            Start();
 
         Vector3 hitLocal = GetComponentInChildren<MeshFilter>().transform.InverseTransformPoint(hit.point);
         float radiusSqr = radius * radius;
@@ -223,11 +215,11 @@ public class SandMesh : MonoBehaviour
     void SandRelaxation(float _deltatime)
     {
         float diagonalSpacing = Mathf.Sqrt(spaceX * spaceX + spaceY * spaceY);
-        heightChange = new float[(xSize+1) * (zSize +1)];
+        heightChange = new float[(xSize + 1) * (zSize + 1)];
 
-       for(int x=0;x< xSize; x++)
+        for (int x = 0; x < xSize; x++)
         {
-            for(int z=0; z< zSize; z++)
+            for (int z = 0; z < zSize; z++)
             {
                 int a = z * (xSize + 1) + x;
                 int b = a + xSize + 1;
@@ -250,23 +242,26 @@ public class SandMesh : MonoBehaviour
 
             }
         }
-        
 
-                for (int i = 0; i < m_modifiedVerts.Length; i++)
+
+        for (int i = 0; i < m_modifiedVerts.Length; i++)
         {
             m_modifiedVerts[i].y += heightChange[i];
+
+            if (!loseSand)
+                m_modifiedVerts[i].y = Mathf.Max(m_modifiedVerts[i].y, minimumHeight);
         }
 
-        
+
     }
 
-    void MeshHeightChange(int _a, int _b, float _deltatime, Vector2 direction,float Spacing)
+    void MeshHeightChange(int _a, int _b, float _deltatime, Vector2 direction, float Spacing)
     {
         float distance = m_modifiedVerts[_a].y - m_modifiedVerts[_b].y;
         float maxSlope = Mathf.Tan(reposeAngle * Mathf.Deg2Rad);
         float allowedHeightDifference = maxSlope * Spacing;
         float excess = Mathf.Abs(distance) - allowedHeightDifference;
-        float amount = excess  * _deltatime;
+        float amount = excess * _deltatime;
 
         amount = Mathf.Min(amount * flowRate, excess / 8);
         if (excess > 0)
@@ -277,21 +272,21 @@ public class SandMesh : MonoBehaviour
                 heightChange[_b] += -amount;
 
 
-               
-                
+
+
             }
             if (distance > 0)
             {
                 heightChange[_b] += amount;
-                heightChange[_a] += - amount;
+                heightChange[_a] += -amount;
 
-                
+
             }
         }
 
     }
 
-   
+
 
     void KeepBound()
     {
@@ -318,7 +313,7 @@ public class SandMesh : MonoBehaviour
     }
 
 
-    
+
 
     private void LowerVerticesInsideTrigger()
     {

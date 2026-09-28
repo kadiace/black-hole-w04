@@ -181,8 +181,8 @@ public class BlackHoleController : MonoBehaviour
         // 3. Affect fluid
         if (other.CompareTag("Sand"))
         {
-            Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
-            Debug.Log(GetComponent<SandMesh>());
+            //Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
+            //Debug.Log(other.GetComponent<SandMesh>());
             other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
             Managers.Gravity.WhiteHole.IsSand = true;
         }
