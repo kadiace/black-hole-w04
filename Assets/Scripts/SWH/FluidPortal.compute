@@ -1,0 +1,61 @@
+#pragma kernel ApplySuction
+#pragma kernel Transport
+
+RWStructuredBuffer<float4> _Positions;
+RWStructuredBuffer<float4> _Velocities;
+
+int _ParticleCount;
+float _DeltaTime;
+float _PullAcceleration;
+float _InnerRadius;
+float _EventHorizonRadius;
+float _ParticleRadius;
+float3 _InnerCenter;
+float3 _EventHorizonCenter;
+float3 _ExitCenter;
+
+// 블랙홀 흡인
+[numthreads(64, 1, 1)]
+void ApplySuction(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 direction = _InnerCenter - _Positions[index].xyz;
+    float distanceSquared = dot(direction, direction);
+
+    if (distanceSquared > _InnerRadius * _InnerRadius || distanceSquared < 0.00000001)
+    {
+        return;
+    }
+
+    float4 velocity = _Velocities[index];
+    velocity.xyz += direction * rsqrt(distanceSquared) * (_PullAcceleration * _DeltaTime);
+    _Velocities[index] = velocity;
+}
+
+// 화이트홀 수송
+[numthreads(64, 1, 1)]
+void Transport(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 offset = _Positions[index].xyz - _EventHorizonCenter;
+    float contactRadius = _EventHorizonRadius + _ParticleRadius;
+
+    if (dot(offset, offset) > contactRadius * contactRadius)
+    {
+        return;
+    }
+
+    _Positions[index] = float4(_ExitCenter, 1.0);
+}

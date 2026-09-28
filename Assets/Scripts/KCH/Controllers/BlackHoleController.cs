@@ -23,6 +23,9 @@ public class BlackHoleController : MonoBehaviour
     private bool _isEliminating;
 
     public System.Action OnRemoved;
+    public SphereCollider InnerCollider => _inner.GetComponent<SphereCollider>();
+    public SphereCollider EventHorizonCollider => _eventHorizon.GetComponent<SphereCollider>();
+    public bool IsFullyExpanded => isActiveAndEnabled && !_isScaling && !_isEliminating && _scalingType == ScalingType.Expand;
 
     private WallCutter cutter;
 
@@ -162,6 +165,10 @@ public class BlackHoleController : MonoBehaviour
         if (gravityController == null)
             return;
 
+        PlayerController playerController = other.GetComponentInParent<PlayerController>();
+        if (playerController != null)
+            playerController.OnGravity = true;
+
         gravityController.SetGravityCenter(this, transform.position);
     }
 
@@ -171,13 +178,20 @@ public class BlackHoleController : MonoBehaviour
             return;
 
         // 1. Rotate Player up to -GravityDir
-        PlayerController playerController = other.GetComponentInParent<PlayerController>();
-        if (playerController != null)
-            playerController.InInner = true;
 
         // 2. Cut Rigid Body object
 
-        // 3. Affect fluid 
+        // 3. Affect Sand
+        if (other.CompareTag("Sand"))
+        {
+            Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
+            Debug.Log(GetComponent<SandMesh>());
+            other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
+            Managers.Gravity.WhiteHole.IsSand = true;
+        }
+                
+        // 4. Affect fluid
+
     }
 
     private void EventHorizonEnter(Collider other)
@@ -194,6 +208,8 @@ public class BlackHoleController : MonoBehaviour
 
         rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
         gravityController.SetGravityCenter(this, null);
+
+
     }
 
     private void OuterExit(Collider other)
@@ -209,6 +225,6 @@ public class BlackHoleController : MonoBehaviour
     {
         PlayerController playerController = other.GetComponentInParent<PlayerController>();
         if (playerController != null)
-            playerController.InInner = false;
+            playerController.OnGravity = false;
     }
 }

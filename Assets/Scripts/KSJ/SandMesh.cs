@@ -31,7 +31,10 @@ public class SandMesh : MonoBehaviour
 
     [SerializeField] private float spaceY;
 
-    
+    public SphereCollider flowTrigger;
+    [SerializeField] private float lowerSpeed = 100f;
+
+
 
     [SerializeField] private float flowRate =1;
 
@@ -93,7 +96,9 @@ public class SandMesh : MonoBehaviour
         m_timer += Time.deltaTime;
         if (m_timer >= simulateTime)
         {
+            LowerVerticesInsideTrigger();
             SandRelaxation(m_timer);
+
             RecalculateMesh();
             m_timer = 0;
         }
@@ -308,6 +313,38 @@ public class SandMesh : MonoBehaviour
                 if (z == zSize)
                     m_modifiedVerts[index] = m_verticies[index];
 
+            }
+        }
+    }
+
+
+    
+
+    private void LowerVerticesInsideTrigger()
+    {
+        if (flowTrigger == null)
+            return;
+
+        Vector3 centerWorld = flowTrigger.transform.TransformPoint(flowTrigger.center);
+        float radiusWorld = flowTrigger.radius *
+            Mathf.Max(
+                flowTrigger.transform.lossyScale.x,
+                flowTrigger.transform.lossyScale.y,
+                flowTrigger.transform.lossyScale.z);
+
+        Transform meshTransform = GetComponentInChildren<MeshFilter>().transform;
+
+        for (int i = 0; i < m_modifiedVerts.Length; i++)
+        {
+            Vector3 vertexWorld = meshTransform.TransformPoint(m_modifiedVerts[i]);
+
+            if (Vector3.Distance(vertexWorld, centerWorld) <= radiusWorld)
+            {
+                // 구체 안에 있는 정점을 월드 아래 방향으로 내림
+                Vector3 loweredWorld = vertexWorld +
+                    Vector3.down * lowerSpeed * Time.deltaTime;
+
+                m_modifiedVerts[i] = meshTransform.InverseTransformPoint(loweredWorld);
             }
         }
     }

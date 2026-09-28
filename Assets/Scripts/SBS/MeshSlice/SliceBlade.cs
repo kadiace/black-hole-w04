@@ -39,7 +39,8 @@ public class SliceBlade : MonoBehaviour
 
         int count = 0;
         foreach (var s in targets)
-            if (s.Slice(point, normal)) count++;
+            if (s.Slice(point, normal))
+                count++;
 
         Debug.Log($"[SliceBlade] {count} 개 오브젝트 절단");
     }
@@ -51,9 +52,11 @@ public class SliceBlade : MonoBehaviour
         Vector3 e = b.extents;
         float r = e.x * Mathf.Abs(normal.x) + e.y * Mathf.Abs(normal.y) + e.z * Mathf.Abs(normal.z);
         float d = Vector3.Dot(normal, b.center - point);
-        if (Mathf.Abs(d) > r) return false;
+        if (Mathf.Abs(d) > r)
+            return false;
 
-        if (m_bladeSize.x <= 0f || m_bladeSize.y <= 0f) return true;
+        if (m_bladeSize.x <= 0f || m_bladeSize.y <= 0f)
+            return true;
 
         // 칼날 로컬 XZ 범위 검사 (대략적인 판정: 바운즈 중심 + 반경)
         Vector3 local = transform.InverseTransformPoint(b.center);

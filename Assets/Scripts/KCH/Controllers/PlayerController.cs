@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody), typeof(GravityController))]
 public class PlayerController : MonoBehaviour, IPressable, IInteractor
@@ -50,10 +51,10 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
     private bool _isGroundedValue;
     private bool _isGrounded
     {
-        get => _isGroundedValue; set
+        get => _isGroundedValue;
+        set
         {
             _isGroundedValue = value;
-            _rb.isKinematic = value;
         }
     }
     private Vector3 _groundNormal = Vector3.up;
@@ -62,8 +63,8 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
 
     [Header("Gravity")]
     private Quaternion _baseRotation;
-    private Vector3 _up => InInner ? -_gravityController.GravityDir : Vector3.up;
-    public bool InInner { private get; set; }
+    private Vector3 _up => OnGravity ? -_gravityController.GravityDir : Vector3.up;
+    public bool OnGravity { private get; set; }
     public Quaternion BaseRotation => _baseRotation;
 
     [Header("Interactive")]
@@ -71,9 +72,10 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
     private float interactDistance = 5f;
     [SerializeField]
     private Transform snapAt;
+    [SerializeField]
+    private Image crosshair;
 
     public Transform SnapAt => snapAt;
-
 
     [Header("Component")]
     [SerializeField]
@@ -85,6 +87,9 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
     {
         _rb = GetComponent<Rigidbody>();
         _gravityController = GetComponent<GravityController>();
+        _rb.useGravity = false;
+
+        SwitchFreezeRotation(true);
         _baseRotation = _rb.rotation;
     }
 
@@ -127,6 +132,18 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             _jumpBufferTimer = Mathf.Max(0f, _jumpBufferTimer - Time.deltaTime);
     }
 
+    private void SwitchFreezeRotation(bool enable)
+    {
+        if (enable)
+        {
+            _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        }
+        else
+        {
+            _rb.constraints = RigidbodyConstraints.None;
+        }
+    }
+
     private void ProcessMoveInput()
     {
         _moveInput = Managers.Input.MoveInput;
@@ -145,17 +162,17 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             _coyoteTimer = 0f;
             _hasGroundContact = false;
             _isGrounded = false;
+            SwitchFreezeRotation(false);
             _groundNormal = -_gravityController.GravityDir;
             return;
         }
 
-        float radius = _collider.radius * transform.lossyScale.x;
+        float radius = _collider.radius * transform.lossyScale.x * 1.5f;
         float height = _collider.height * transform.lossyScale.y;
 
         float halfSegment = Mathf.Max(0f, height * 0.5f - radius);
 
-        Vector3 bottomSphereCenter =
-            transform.position - transform.up * halfSegment;
+        Vector3 bottomSphereCenter = transform.position - transform.up * halfSegment;
 
         float castDistance = radius + _groundCheckDistance;
 
@@ -171,18 +188,21 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             _isGrounded = true;
             _groundNormal = hit.normal;
             _coyoteTimer = _coyoteTime;
+            SwitchFreezeRotation(true);
         }
         else if (_hasGroundContact)
         {
             _isGrounded = true;
             _groundNormal = _contactGroundNormal;
             _coyoteTimer = _coyoteTime;
+            SwitchFreezeRotation(true);
         }
         else
         {
             _isGrounded = false;
             _groundNormal = -_gravityController.GravityDir;
             _coyoteTimer = Mathf.Max(0f, _coyoteTimer - Time.fixedDeltaTime);
+            SwitchFreezeRotation(false);
         }
 
         _hasGroundContact = false;
@@ -201,7 +221,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
         _jumpBufferTimer = 0f;
 
         _jumpGroundedCheckLockTimer = _jumpGroundedCheckLockTime;
-        _rb.isKinematic = false;
+        SwitchFreezeRotation(false);
         Vector3 velocity = _rb.linearVelocity;
         velocity.y = 0f;
         _rb.linearVelocity = velocity;
@@ -274,7 +294,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
 
     private void ProcessAirMove()
     {
-        Vector2 moveDirection = GetMoveDirection();
+        Vector3 moveDirection = GetMoveDirection();
         _rb.AddForce(_moveAcceleration * moveDirection, ForceMode.Acceleration);
     }
 
@@ -288,7 +308,6 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
 
     private void ProcessInteract()
     {
-        if (!Managers.Input.InteractPressed) return;
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green);
@@ -298,8 +317,19 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
 
             if (interactable != null)
-                interactable.Interact(this);
+            {
+                if (crosshair != null)
+                    crosshair.enabled = true;
 
+                if (!Managers.Input.InteractPressed)
+                    return;
+                interactable.Interact(this);
+            }
+            else
+            {
+                if (crosshair != null)
+                    crosshair.enabled = false;
+            }
             return;
         }
     }
