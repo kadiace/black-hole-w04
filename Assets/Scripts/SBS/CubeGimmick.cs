@@ -51,43 +51,8 @@ public class CubeGimmick : MonoBehaviour, IPressable, IInteractable
         rb.angularVelocity = Vector3.zero;
         rb.linearVelocity = Vector3.zero;
 
-        ResolveGroundOverlap();
-
         rb.isKinematic = false;
 
         nextInteractTime = Time.time + regrabDelay;
-    }
-
-    private void ResolveGroundOverlap()
-    {
-        Vector3 origin = bc.bounds.center + Vector3.up * 0.1f;
-
-        float castDistance = bc.bounds.extents.y + groundCheckDistance;
-
-        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, castDistance, ~0, QueryTriggerInteraction.Ignore);
-
-        RaycastHit? groundHit = null;
-
-        foreach (RaycastHit hit in hits)
-        {
-            if (!hit.collider.CompareTag("Ground"))
-                continue;
-
-            if (groundHit == null || hit.distance < groundHit.Value.distance)
-                groundHit = hit;
-        }
-
-        if (groundHit == null)
-            return;
-
-        float cubeBottom = bc.bounds.min.y;
-        float groundY = groundHit.Value.point.y + groundSkin;
-
-        if (cubeBottom >= groundY)
-            return;
-
-        float correction = groundY - cubeBottom;
-
-        transform.position += Vector3.up * correction;
     }
 }

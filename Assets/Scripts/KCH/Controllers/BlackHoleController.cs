@@ -152,7 +152,7 @@ public class BlackHoleController : MonoBehaviour
             SetActive(false);
     }
 
-    private void Eliminate()
+    public void Eliminate()
     {
         gameObject.SetActive(false);
         Managers.Gravity.WhiteHole.SetActive(false);

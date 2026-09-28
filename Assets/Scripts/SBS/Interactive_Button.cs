@@ -16,6 +16,9 @@ public class Interactive_Button : MonoBehaviour, IInteractable
     [SerializeField]
     private LogicBase logicTarget;
 
+    [SerializeField]
+    private GameObject cylinder;
+
     private float ticker;
     private bool isActive;
 
@@ -67,7 +70,9 @@ public class Interactive_Button : MonoBehaviour, IInteractable
             return;
 
         isActive = active;
-
+        Vector3 scale = cylinder.transform.localScale;
+        scale.y = active ? 0.1f : 0.3f;
+        cylinder.transform.localScale = scale;
 
         logicTarget.SetActive(active);
     }
