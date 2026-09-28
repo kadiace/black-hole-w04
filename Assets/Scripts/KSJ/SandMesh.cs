@@ -43,6 +43,8 @@ public class SandMesh : MonoBehaviour
 
     public bool loseSand = false;
 
+    private float storedSandAmount;
+
 
     private void Start()
     {
@@ -188,11 +190,16 @@ public class SandMesh : MonoBehaviour
 
     public void SandUp(RaycastHit hit)
     {
+
+        float amountToPour = Managers.Gravity.savedSand;
+        if (Managers.Gravity.savedSand <= 0)
+            return;
         if (m_modifiedVerts == null || GetComponentInChildren<MeshFilter>() == null)
             Start();
 
         Vector3 hitLocal = GetComponentInChildren<MeshFilter>().transform.InverseTransformPoint(hit.point);
         float radiusSqr = radius * radius;
+        float totalWeight = 0;
 
         for (int v = 0; v < m_modifiedVerts.Length; v++)
         {
@@ -206,8 +213,25 @@ public class SandMesh : MonoBehaviour
             float distance01 = Mathf.Sqrt(distanceSqr) / radius;
             float weight = 1f - Mathf.SmoothStep(0f, 1f, distance01);
 
-            m_modifiedVerts[v].y += deformationStength * weight * 0.5f;
+            totalWeight += weight;
         }
+
+        for (int v = 0; v < m_modifiedVerts.Length; v++)
+        {
+            Vector3 offset = m_modifiedVerts[v] - hitLocal;
+            float distanceSqr = offset.sqrMagnitude;
+
+            if (distanceSqr >= radiusSqr)
+                continue;
+
+            // 중심에서 가장 많이 올라가고, 반경 끝에서 0이 되는 부드러운 가중치
+            float distance01 = Mathf.Sqrt(distanceSqr) / radius;
+            float weight = 1f - Mathf.SmoothStep(0f, 1f, distance01);
+
+            m_modifiedVerts[v].y += amountToPour * weight / totalWeight;
+        }
+
+        Managers.Gravity.savedSand = 0;
 
         RecalculateMesh();
     }
@@ -234,10 +258,10 @@ public class SandMesh : MonoBehaviour
                     a, b, _deltatime, Vector2.up, spaceY);
 
                 // 삼각형의 b-c 대각선 이웃
-                MeshHeightChange(
-                    b, c, _deltatime,
-                    new Vector2(1f, -1f).normalized,
-                    diagonalSpacing);
+                //MeshHeightChange(
+                //    b, c, _deltatime,
+                //    new Vector2(1f, -1f).normalized,
+                //    diagonalSpacing);
 
 
             }
@@ -248,8 +272,8 @@ public class SandMesh : MonoBehaviour
         {
             m_modifiedVerts[i].y += heightChange[i];
 
-            if (!loseSand)
-                m_modifiedVerts[i].y = Mathf.Max(m_modifiedVerts[i].y, minimumHeight);
+
+            m_modifiedVerts[i].y = Mathf.Max(m_modifiedVerts[i].y, minimumHeight);
         }
 
 
@@ -317,9 +341,10 @@ public class SandMesh : MonoBehaviour
 
     private void LowerVerticesInsideTrigger()
     {
+
         if (flowTrigger == null)
             return;
-
+        storedSandAmount = 0;
         Vector3 centerWorld = flowTrigger.transform.TransformPoint(flowTrigger.center);
         float radiusWorld = flowTrigger.radius *
             Mathf.Max(
@@ -336,12 +361,32 @@ public class SandMesh : MonoBehaviour
             if (Vector3.Distance(vertexWorld, centerWorld) <= radiusWorld)
             {
                 // 구체 안에 있는 정점을 월드 아래 방향으로 내림
-                Vector3 loweredWorld = vertexWorld +
-                    Vector3.down * lowerSpeed * Time.deltaTime;
+                Vector3 loweredWorld = vertexWorld + Vector3.down * lowerSpeed * Time.deltaTime;
 
-                m_modifiedVerts[i] = meshTransform.InverseTransformPoint(loweredWorld);
+
+
+                // 내려간 월드 위치를 메시 로컬 좌표로 변환
+                Vector3 loweredLocal = meshTransform.InverseTransformPoint(loweredWorld);
+
+                loweredLocal.y = Mathf.Max(loweredLocal.y, minimumHeight);
+
+                // 이번에 내려간 높이를 총량에 저장
+                float loweredBy = m_modifiedVerts[i].y - loweredLocal.y;
+                if (loweredBy > 0f)
+                    storedSandAmount += loweredBy;
+
+                // 변경된 로컬 위치 적용
+                m_modifiedVerts[i] = loweredLocal;
+
+
+
+
             }
         }
+        storedSandAmount /= 10;
+        Managers.Gravity.savedSand += storedSandAmount;
     }
+
+
 
 }

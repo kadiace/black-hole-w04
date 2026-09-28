@@ -16,10 +16,14 @@ public class GravityManager
     public GameObject LoadBlackHole => Resources.Load<GameObject>("KCH/Prefabs/BlackHole");
     public GameObject LoadWhiteHole => Resources.Load<GameObject>("KCH/Prefabs/WhiteHole");
 
+    public float savedSand = 0;
+
     public void Init()
     {
         GravityStat = Resources.Load<GravityStat>("KCH/Datas/GravityStat");
         InstantiateBlackHole();
+        CanFireBlackHole = true;
+        CanFireWhiteHole = true;
         InstantiateWhiteHole();
         CanFireBlackHole = true;
         CanFireWhiteHole = true;

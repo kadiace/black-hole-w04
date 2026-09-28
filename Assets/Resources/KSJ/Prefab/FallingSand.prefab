@@ -135,4 +135,4 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   sandPrefab: {fileID: 2444789786704727229, guid: 7bf59014a452f7e4aa3afebff0b1adde, type: 3}
-  fallTimer: 2
+  fallTimer: 1
