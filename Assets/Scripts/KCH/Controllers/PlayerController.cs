@@ -41,6 +41,8 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
     private float _jumpBufferTimer;
     private float _jumpGroundedCheckLockTimer;
 
+    private Vector3 _moveVelocity; // 현재 이동 속도 (월드 기준)
+
     [Header("Ground")]
     [SerializeField]
     private LayerMask _groundLayer;
@@ -283,13 +285,17 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
         Vector3 moveDirection = GetMoveDirection();
 
         if (moveDirection.sqrMagnitude <= 0.001f)
+        {
+            _rb.linearVelocity = Vector3.zero;
             return;
+        }
 
         moveDirection.Normalize();
 
         float speed = _sprintInput ? _sprintSpeed : _moveSpeed;
-        Vector3 movement = speed * Time.fixedDeltaTime * moveDirection;
-        _rb.MovePosition(_rb.position + movement);
+        Vector3 movement = speed * moveDirection;// * Time.fixedDeltaTime;
+        _rb.linearVelocity = movement;
+        //_rb.MovePosition(_rb.position + movement);
     }
 
     private void ProcessAirMove()

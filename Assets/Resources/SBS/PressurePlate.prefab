@@ -49,7 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PressurePlate
   buttonTop: {fileID: 1515512898225093158}
   logicTarget: {fileID: 0}
-  releasedPosition: {x: 0, y: 0, z: 0}
+  releasedPosition: {x: 0, y: 0.125, z: 0}
   pressedPosition: {x: 0, y: 0, z: 0}
   pressDuration: 0.2
   pressCurve:
