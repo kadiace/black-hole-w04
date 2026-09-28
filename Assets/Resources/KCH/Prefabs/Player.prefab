@@ -93,8 +93,8 @@ MonoBehaviour:
   _gamepadSensitivity: 180
   _minPitch: -80
   _maxPitch: 90
-  _moveSpeed: 20
-  _sprintSpeed: 30
+  _moveSpeed: 10
+  _sprintSpeed: 20
   _moveAcceleration: 20
   _jumpAcceleration: 8
   _coyoteTime: 0.1
@@ -102,7 +102,7 @@ MonoBehaviour:
   _jumpGroundedCheckLockTime: 0.15
   _groundLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 320
   _groundCheckDistance: 0.01
   _maxGroundAngle: 50
   interactDistance: 5

@@ -27,6 +27,21 @@ public class WhiteHoleController : MonoBehaviour
 
     public bool ProcessEliminated => _processEliminate;
 
+    [Header("Sand")]
+    [SerializeField]
+    private GameObject _sand;
+    private bool _isSand;
+
+    public bool IsSand
+    {
+        get { return _isSand; }
+        set
+        {
+            _sand.SetActive(value);
+            _isSand = value;
+        }
+    }
+
     void Awake()
     {
         _processEliminate = false;
@@ -84,7 +99,10 @@ public class WhiteHoleController : MonoBehaviour
 
         _renderer.sharedMaterial = isActivated ? _onMaterial : _offMaterial;
         if (isActivated)
+        {
             _emission.gameObject.SetActive(true);
+            _sand.SetActive(true);
+        }
     }
 
     public void ProcessEliminate()
@@ -107,6 +125,8 @@ public class WhiteHoleController : MonoBehaviour
 
     private void Eliminate()
     {
+        _sand.SetActive(false);
+        IsSand = false;
         gameObject.SetActive(false);
     }
 }

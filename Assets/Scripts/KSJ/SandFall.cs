@@ -21,20 +21,31 @@ public class SandFall : MonoBehaviour
         {
             if (m_currentSand == null)
             {
-                m_currentSand = Instantiate(
-                    sandPrefab,
-                    hit.point,
-                    Quaternion.identity
-                );
 
-                
-                WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
-                if ((flowSandMask & (1 << hit.collider.gameObject.layer)) != 0)
+                if (hit.collider.gameObject.GetComponent<SandMesh>())
                 {
-                    m_currentSand.GetComponent<SandMesh>().losesand = true;
+                    m_currentSand = hit.collider.gameObject;
+                    
+                }
+                else
+                {
+                    m_currentSand = Instantiate(
+                        sandPrefab,
+                        hit.point,
+                        Quaternion.identity
+                    );
+                    WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
+                    if ((flowSandMask & (1 << hit.collider.gameObject.layer)) != 0)
+                    {
+                        m_currentSand.GetComponent<SandMesh>().losesand = true;
+                    }
+
+                    meshMaker.GenerateOnGround(hit);
                 }
 
-                meshMaker.GenerateOnGround(hit);
+                
+                
+                
             }
             else
             {
