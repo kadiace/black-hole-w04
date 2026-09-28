@@ -25,6 +25,7 @@ public class SandFall : MonoBehaviour
                 if (hit.collider.gameObject.GetComponent<SandMesh>())
                 {
                     m_currentSand = hit.collider.gameObject;
+                    
                 }
                 else
                 {
@@ -33,16 +34,18 @@ public class SandFall : MonoBehaviour
                         hit.point,
                         Quaternion.identity
                     );
+                    WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
+                    if ((flowSandMask & (1 << hit.collider.gameObject.layer)) != 0)
+                    {
+                        m_currentSand.GetComponent<SandMesh>().losesand = true;
+                    }
+
+                    meshMaker.GenerateOnGround(hit);
                 }
 
                 
-                WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
-                if ((flowSandMask & (1 << hit.collider.gameObject.layer)) != 0)
-                {
-                    m_currentSand.GetComponent<SandMesh>().losesand = true;
-                }
-
-                meshMaker.GenerateOnGround(hit);
+                
+                
             }
             else
             {

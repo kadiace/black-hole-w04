@@ -149,6 +149,7 @@ public class BlackHoleController : MonoBehaviour
 
     private void Eliminate()
     {
+
         gameObject.SetActive(false);
         OnRemoved?.Invoke();
     }
@@ -177,7 +178,14 @@ public class BlackHoleController : MonoBehaviour
 
         // 2. Cut Rigid Body object
 
-        // 3. Affect fluid 
+        // 3. Affect fluid
+        if (other.CompareTag("Sand"))
+        {
+            Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
+            Debug.Log(GetComponent<SandMesh>());
+            other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
+            Managers.Gravity.WhiteHole.IsSand = true;
+        }
     }
 
     private void EventHorizonEnter(Collider other)
@@ -194,6 +202,8 @@ public class BlackHoleController : MonoBehaviour
 
         rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
         gravityController.SetGravityCenter(this, null);
+
+
     }
 
     private void OuterExit(Collider other)
