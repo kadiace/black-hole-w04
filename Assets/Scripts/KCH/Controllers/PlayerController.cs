@@ -142,7 +142,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
         }
         else
         {
-            _rb.constraints = RigidbodyConstraints.None;
+            _rb.constraints = RigidbodyConstraints.FreezeRotationZ;
         }
     }
 
@@ -169,7 +169,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             return;
         }
 
-        float radius = _collider.radius * transform.lossyScale.x * 1.5f;
+        float radius = _collider.radius * transform.lossyScale.x;
         float height = _collider.height * transform.lossyScale.y;
 
         float halfSegment = Mathf.Max(0f, height * 0.5f - radius);
