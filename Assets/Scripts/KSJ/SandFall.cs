@@ -21,11 +21,19 @@ public class SandFall : MonoBehaviour
         {
             if (m_currentSand == null)
             {
-                m_currentSand = Instantiate(
-                    sandPrefab,
-                    hit.point,
-                    Quaternion.identity
-                );
+
+                if (hit.collider.gameObject.GetComponent<SandMesh>())
+                {
+                    m_currentSand = hit.collider.gameObject;
+                }
+                else
+                {
+                    m_currentSand = Instantiate(
+                        sandPrefab,
+                        hit.point,
+                        Quaternion.identity
+                    );
+                }
 
                 
                 WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
