@@ -7,4 +7,6 @@ public class TriggerChecker : MonoBehaviour
 
     void OnTriggerEnter(Collider other) => OnTriggerEntered?.Invoke(other);
     void OnTriggerExit(Collider other) => OnTriggerExited?.Invoke(other);
+
+    private void OnTriggerStay(Collider other) => OnTriggerEntered?.Invoke(other);
 }

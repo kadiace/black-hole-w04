@@ -149,7 +149,6 @@ public class BlackHoleController : MonoBehaviour
 
     private void Eliminate()
     {
-
         gameObject.SetActive(false);
         OnRemoved?.Invoke();
     }
@@ -163,6 +162,10 @@ public class BlackHoleController : MonoBehaviour
         if (gravityController == null)
             return;
 
+        PlayerController playerController = other.GetComponentInParent<PlayerController>();
+        if (playerController != null)
+            playerController.OnGravity = true;
+
         gravityController.SetGravityCenter(this, transform.position);
     }
 
@@ -172,9 +175,6 @@ public class BlackHoleController : MonoBehaviour
             return;
 
         // 1. Rotate Player up to -GravityDir
-        PlayerController playerController = other.GetComponentInParent<PlayerController>();
-        if (playerController != null)
-            playerController.InInner = true;
 
         // 2. Cut Rigid Body object
 
@@ -219,6 +219,6 @@ public class BlackHoleController : MonoBehaviour
     {
         PlayerController playerController = other.GetComponentInParent<PlayerController>();
         if (playerController != null)
-            playerController.InInner = false;
+            playerController.OnGravity = false;
     }
 }
