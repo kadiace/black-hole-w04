@@ -18,7 +18,7 @@ public class Stage2SceneContext : SceneContext
     {
         _blackHoleGunCollider.OnTriggerEntered += OnBlackHoleGunEnter;
 
-        Managers.Gravity.CreateWhiteHole(new Vector3(-3f, 7.5f, -10));
+        Managers.Gravity.CreateWhiteHole(new Vector3(-8, 5, -5));
 
         Managers.Gravity.CanFireBlackHole = false;
         Managers.Gravity.CanFireWhiteHole = false;
