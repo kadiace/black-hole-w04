@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody), typeof(GravityController))]
 public class PlayerController : MonoBehaviour, IPressable, IInteractor
@@ -71,9 +72,10 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
     private float interactDistance = 5f;
     [SerializeField]
     private Transform snapAt;
+    [SerializeField]
+    private Image crosshair;
 
     public Transform SnapAt => snapAt;
-
 
     [Header("Component")]
     [SerializeField]
@@ -288,7 +290,6 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
 
     private void ProcessInteract()
     {
-        if (!Managers.Input.InteractPressed) return;
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green);
@@ -298,8 +299,19 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
 
             if (interactable != null)
-                interactable.Interact(this);
+            {
+                if (crosshair != null)
+                    crosshair.enabled = true;
 
+                if (!Managers.Input.InteractPressed)
+                    return;
+                interactable.Interact(this);
+            }
+            else
+            {
+                if (crosshair != null)
+                    crosshair.enabled = false;
+            }
             return;
         }
     }
