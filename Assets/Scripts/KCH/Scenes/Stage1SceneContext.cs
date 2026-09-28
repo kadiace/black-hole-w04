@@ -29,7 +29,7 @@ public class Stage1SceneContext : SceneContext
         {
             Managers.Gravity.CreateBlackHole(position);
 
-            yield return new WaitForSeconds(15f);
+            yield return new WaitForSeconds(12f);
         }
     }
 

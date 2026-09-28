@@ -135,7 +135,7 @@ public class WhiteHoleController : MonoBehaviour
 
     }
 
-    private void Eliminate()
+    public void Eliminate()
     {
         _sand.GetComponent<SandFall>().Disable();
         _isSand = false;

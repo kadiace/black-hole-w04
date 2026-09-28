@@ -35,6 +35,7 @@ public abstract class SceneContext : MonoBehaviour
 
     private void RestartStage(InputAction.CallbackContext context)
     {
+        Managers.Clear();
         SceneManager.LoadScene(GetCurrentStage().ToString());
     }
 
