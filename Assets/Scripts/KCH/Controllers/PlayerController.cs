@@ -311,26 +311,47 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green);
-
+        IInteractable interactable = null;
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, LayerMask.NameToLayer("interactive"), QueryTriggerInteraction.Ignore))
         {
-            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+            interactable = hit.collider.GetComponentInParent<IInteractable>();
 
             if (interactable != null)
             {
                 if (crosshair != null)
                     crosshair.enabled = true;
-
-                if (!Managers.Input.InteractPressed)
-                    return;
-                interactable.Interact(this);
             }
             else
             {
                 if (crosshair != null)
                     crosshair.enabled = false;
             }
+        }
+
+        if (!Managers.Input.InteractPressed)
+        {
             return;
+        }
+
+        if (snapAt.childCount != 0)
+            ProcessDeInteract();
+
+        if (interactable != null)
+        {
+            interactable.Interact(this);
+        }
+    }
+
+    private void ProcessDeInteract()
+    {
+        for (int i = snapAt.childCount - 1; i >= 0; i--)
+        {
+            Transform child = snapAt.GetChild(i);
+
+            if (child.TryGetComponent<IInteractable>(out var interactable))
+            {
+                interactable.Release(this);
+            }
         }
     }
 }

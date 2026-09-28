@@ -53,7 +53,7 @@ public class Interactive_Button : MonoBehaviour, IInteractable
         }
     }
 
-    public void Release()
+    public void Release(IInteractor interactor)
     {
         if (buttonType != ButtonType.Hold)
             return;

@@ -30,14 +30,14 @@ public class CubeGimmick : MonoBehaviour, IPressable, IInteractable
     {
         if (Time.time < nextInteractTime)
             return;
-        
+
         transform.SetParent(interactor.SnapAt);
         transform.localPosition = Vector3.zero;
-        
+
         rb.isKinematic = true;
         rb.angularVelocity = Vector3.zero;
         rb.linearVelocity = Vector3.zero;
-        
+
         return;
     }
 
@@ -45,16 +45,16 @@ public class CubeGimmick : MonoBehaviour, IPressable, IInteractable
     {
         if (!transform.IsChildOf(interactor.SnapAt))
             return;
-        
+
         transform.SetParent(null);
-        
+
         rb.angularVelocity = Vector3.zero;
         rb.linearVelocity = Vector3.zero;
-        
+
         ResolveGroundOverlap();
-        
+
         rb.isKinematic = false;
-        
+
         nextInteractTime = Time.time + regrabDelay;
     }
 
