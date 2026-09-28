@@ -68,6 +68,7 @@ public class Interactive_Button : MonoBehaviour, IInteractable
 
         isActive = active;
 
+
         logicTarget.SetActive(active);
     }
 }

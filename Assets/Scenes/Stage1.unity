@@ -3315,6 +3315,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: Door A
       objectReference: {fileID: 0}
+    - target: {fileID: 3849796890167422491, guid: 8a09fc914dc427849bf2b89255898813, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5619273562895379176, guid: 8a09fc914dc427849bf2b89255898813, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5860683703913127468, guid: 8a09fc914dc427849bf2b89255898813, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6286064167968720180, guid: 8a09fc914dc427849bf2b89255898813, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 7104227335154976164, guid: 8a09fc914dc427849bf2b89255898813, type: 3}
       propertyPath: m_LocalPosition.x
       value: 5
@@ -3354,6 +3370,10 @@ PrefabInstance:
     - target: {fileID: 7104227335154976164, guid: 8a09fc914dc427849bf2b89255898813, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8210040952610199817, guid: 8a09fc914dc427849bf2b89255898813, type: 3}
+      propertyPath: m_Layer
+      value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
