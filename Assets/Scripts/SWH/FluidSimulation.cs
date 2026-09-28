@@ -134,6 +134,8 @@ public sealed class FluidSimulation : MonoBehaviour
     private long simulationStep;
     private long tileReadbackStep;
 
+    public event Action<ComputeBuffer, int> ParticlePositionsUpdated;
+    public event Action SimulationStopped;
     private int GridCellCount => activeTiles.Count * CellCountPerTile;
     private int FaceCount => activeTiles.Count * FaceCountPerTile;
     private float TileWorldSize => CellsPerTile * cellSize;
@@ -797,6 +799,8 @@ public sealed class FluidSimulation : MonoBehaviour
             }
         }
 
+        ParticlePositionsUpdated?.Invoke(positionBuffer, activeParticleCount);
+
         if (!tileReadbackPending && Time.time >= nextTileReadbackTime)
         {
             sparseGridShader.Dispatch(clearMissingTilesKernel, 1, 1, 1);
@@ -1260,6 +1264,7 @@ public sealed class FluidSimulation : MonoBehaviour
 
     private void OnDisable()
     {
+        SimulationStopped?.Invoke();
         tileReadbackPending = false;
         ReleaseTileBuffers();
         ReleaseParticleBuffers();

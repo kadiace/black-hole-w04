@@ -1,0 +1,47 @@
+#pragma kernel ClearCounts
+#pragma kernel CountParticles
+
+StructuredBuffer<float4> _Positions;
+RWStructuredBuffer<uint> _Counts;
+
+int _ParticleCount;
+float4x4 _WorldToSensor;
+float _SensorRadius;
+float _SensorHalfHeight;
+
+// 감지값 초기화
+[numthreads(8, 1, 1)]
+void ClearCounts(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= 5u)
+    {
+        return;
+    }
+
+    _Counts[id.x] = 0u;
+}
+
+// 상단 영역 집계
+[numthreads(64, 1, 1)]
+void CountParticles(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+
+    if (index >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    float3 position = _Positions[index].xyz;
+    float3 local = mul(_WorldToSensor, float4(position, 1.0)).xyz;
+
+    if (abs(local.y) > _SensorHalfHeight || dot(local.xz, local.xz) > _SensorRadius * _SensorRadius)
+    {
+        return;
+    }
+
+    uint quadrant = (local.x >= 0.0 ? 1u : 0u) + (local.z >= 0.0 ? 2u : 0u);
+
+    InterlockedAdd(_Counts[0], 1u);
+    InterlockedAdd(_Counts[1u + quadrant], 1u);
+}
