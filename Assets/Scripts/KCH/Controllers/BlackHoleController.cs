@@ -23,6 +23,9 @@ public class BlackHoleController : MonoBehaviour
     private bool _isEliminating;
 
     public System.Action OnRemoved;
+    public SphereCollider InnerCollider => _inner.GetComponent<SphereCollider>();
+    public SphereCollider EventHorizonCollider => _eventHorizon.GetComponent<SphereCollider>();
+    public bool IsFullyExpanded => isActiveAndEnabled && !_isScaling && !_isEliminating && _scalingType == ScalingType.Expand;
 
     private WallCutter cutter;
 
@@ -177,7 +180,10 @@ public class BlackHoleController : MonoBehaviour
 
         // 2. Cut Rigid Body object
 
-        // 3. Affect fluid 
+        // 3. Affect sand
+        
+        // 4. Affect fluid
+
     }
 
     private void EventHorizonEnter(Collider other)

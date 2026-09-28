@@ -52,6 +52,7 @@ public sealed class FluidSimulation : MonoBehaviour
     [SerializeField] private ComputeShader spatialGridShader;
     [SerializeField] private ComputeShader sparseGridShader;
     [SerializeField] private ComputeShader macGridShader;
+    [SerializeField] private ComputeShader portalShader;
     [SerializeField] private SolverMode solverMode = SolverMode.PicFlip;
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private Vector3 externalAcceleration = Vector3.zero;
@@ -118,8 +119,10 @@ public sealed class FluidSimulation : MonoBehaviour
     private ComputeBuffer oldWFaceBuffer;
 
     private MaterialPropertyBlock particleProperties;
+    private FluidPortalBridge portalBridge;
     private readonly List<Vector3Int> activeTiles = new List<Vector3Int>();
     private readonly HashSet<Vector3Int> activeTileSet = new HashSet<Vector3Int>();
+    private readonly Dictionary<Vector3Int, long> pendingPortalTiles = new Dictionary<Vector3Int, long>();
     private AsyncGPUReadbackRequest tileReadback;
     private bool tileReadbackPending;
     private float nextTileReadbackTime;
@@ -128,6 +131,8 @@ public sealed class FluidSimulation : MonoBehaviour
     private int[] debugCellStates;
     private int activeParticleCount;
     private int tileHashCapacity;
+    private long simulationStep;
+    private long tileReadbackStep;
 
     private int GridCellCount => activeTiles.Count * CellCountPerTile;
     private int FaceCount => activeTiles.Count * FaceCountPerTile;
@@ -159,6 +164,8 @@ public sealed class FluidSimulation : MonoBehaviour
     private int jacobiBKernel;
     private int projectFacesKernel;
     private int gridToParticlesKernel;
+    private int applySuctionKernel;
+    private int transportKernel;
 
     // 초기화
     private void OnEnable()
@@ -174,23 +181,25 @@ public sealed class FluidSimulation : MonoBehaviour
         maxActiveTiles = maxActiveTiles == -1 ? -1 : Mathf.Max(1, maxActiveTiles);
         tileRefreshInterval = Mathf.Max(0.02f, tileRefreshInterval);
         allocatedCellSize = cellSize;
+        portalBridge = GetComponent<FluidPortalBridge>();
 
         if (!SystemInfo.supportsComputeShaders || !SystemInfo.supportsAsyncGPUReadback)
         {
-            Debug.LogError("Compute Shader 또는 비동기 GPU 읽기를 지원하지 않습니다.", this);
+            Debug.LogError("유체 계산에 필요한 GPU 기능을 지원하지 않습니다.", this);
             enabled = false;
             return;
         }
 
-        if (integrationShader == null || spatialGridShader == null || sparseGridShader == null || macGridShader == null)
+        if (integrationShader == null || spatialGridShader == null || sparseGridShader == null || macGridShader == null || (portalBridge != null && portalShader == null))
         {
-            Debug.LogError("네 개의 Compute Shader를 모두 연결하세요.", this);
+            Debug.LogError("유체 계산에 필요한 Compute Shader 연결을 확인하세요.", this);
             enabled = false;
             return;
         }
 
         if (!CreateInitialParticles(out Vector4[] positions, out Vector4[] velocities))
         {
+            Debug.LogError("Spawn Points 구성을 확인하세요.", this);
             enabled = false;
             return;
         }
@@ -246,6 +255,12 @@ public sealed class FluidSimulation : MonoBehaviour
         jacobiBKernel = macGridShader.FindKernel("JacobiB");
         projectFacesKernel = macGridShader.FindKernel("ProjectFaces");
         gridToParticlesKernel = macGridShader.FindKernel("GridToParticles");
+
+        if (portalShader != null)
+        {
+            applySuctionKernel = portalShader.FindKernel("ApplySuction");
+            transportKernel = portalShader.FindKernel("Transport");
+        }
     }
 
     // 생성 지점
@@ -256,7 +271,6 @@ public sealed class FluidSimulation : MonoBehaviour
 
         if (spawnPoints == null || spawnPoints.Length == 0)
         {
-            Debug.LogError("Spawn Points에 생성 지점을 추가하세요.", this);
             return false;
         }
 
@@ -270,21 +284,18 @@ public sealed class FluidSimulation : MonoBehaviour
 
             if (spawn.point == null)
             {
-                Debug.LogError("입자 수가 지정된 Spawn Point의 Point를 연결하세요.", this);
                 return false;
             }
 
             total += spawn.particleCount;
             if (total > int.MaxValue)
             {
-                Debug.LogError("전체 입자 수가 너무 많습니다.", this);
                 return false;
             }
         }
 
         if (total == 0)
         {
-            Debug.LogError("Spawn Points 중 하나 이상의 입자 수를 1 이상으로 설정하세요.", this);
             return false;
         }
 
@@ -382,6 +393,22 @@ public sealed class FluidSimulation : MonoBehaviour
         return result;
     }
 
+    // 출구 타일
+    private bool EnsurePortalExitTiles(Vector3 exitCenter)
+    {
+        var outlet = new HashSet<Vector3Int> { WorldToTile(exitCenter) };
+        HashSet<Vector3Int> needed = ExpandTiles(outlet);
+
+        if (activeTileSet.IsSupersetOf(needed))
+        {
+            return true;
+        }
+
+        var required = new HashSet<Vector3Int>(activeTileSet);
+        required.UnionWith(needed);
+        return SetActiveTiles(required);
+    }
+
     private static int CompareTiles(Vector3Int a, Vector3Int b)
     {
         int result = a.x.CompareTo(b.x);
@@ -406,15 +433,9 @@ public sealed class FluidSimulation : MonoBehaviour
     // 활성 타일
     private bool SetActiveTiles(HashSet<Vector3Int> required)
     {
-        if (required.Count == 0)
+        if (required.Count == 0 || (maxActiveTiles != -1 && required.Count > maxActiveTiles))
         {
-            Debug.LogError("활성화할 유체 타일이 없습니다.", this);
-            return false;
-        }
-
-        if (maxActiveTiles != -1 && required.Count > maxActiveTiles)
-        {
-            Debug.LogError($"필요한 타일 {required.Count}개가 Max Active Tiles {maxActiveTiles}개를 초과했습니다.", this);
+            Debug.LogError($"활성 타일 수 {required.Count}, 최대 허용 {maxActiveTiles}", this);
             return false;
         }
 
@@ -617,6 +638,14 @@ public sealed class FluidSimulation : MonoBehaviour
         macGridShader.SetBuffer(gridToParticlesKernel, "_Velocities", velocityBuffer);
         BindMacFaces(gridToParticlesKernel);
         BindMacOldFaces(gridToParticlesKernel);
+
+        if (portalShader != null)
+        {
+            portalShader.SetInt("_ParticleCount", activeParticleCount);
+            portalShader.SetBuffer(applySuctionKernel, "_Positions", positionBuffer);
+            portalShader.SetBuffer(applySuctionKernel, "_Velocities", velocityBuffer);
+            portalShader.SetBuffer(transportKernel, "_Positions", positionBuffer);
+        }
     }
 
     private void BindSpatialSearch(int kernel)
@@ -689,6 +718,22 @@ public sealed class FluidSimulation : MonoBehaviour
             return;
         }
 
+        simulationStep++;
+
+        FluidPortalBridge.PortalState portal = default;
+        bool portalActive = portalBridge != null && portalBridge.isActiveAndEnabled && portalShader != null && portalBridge.TryGetPortal(out portal);
+
+        if (portalActive)
+        {
+            if (!EnsurePortalExitTiles(portal.ExitCenter))
+            {
+                enabled = false;
+                return;
+            }
+
+            pendingPortalTiles[WorldToTile(portal.ExitCenter)] = simulationStep;
+        }
+
         int particleGroups = (activeParticleCount + 63) / 64;
         int cellGroups = (GridCellCount + 63) / 64;
         int faceGroups = (FaceCount + 63) / 64;
@@ -699,6 +744,19 @@ public sealed class FluidSimulation : MonoBehaviour
         integrationShader.SetVector("_ExternalAcceleration", externalAcceleration);
         integrationShader.SetFloat("_CollisionRadius", Mathf.Clamp(collisionRadius, 0.001f, cellSize * 0.49f));
         integrationShader.SetFloat("_WallBounce", Mathf.Clamp01(wallBounce));
+
+        if (portalActive)
+        {
+            portalShader.SetFloat("_DeltaTime", deltaTime);
+            portalShader.SetFloat("_PullAcceleration", portal.PullAcceleration);
+            portalShader.SetFloat("_InnerRadius", portal.InnerRadius);
+            portalShader.SetFloat("_EventHorizonRadius", portal.EventHorizonRadius);
+            portalShader.SetFloat("_ParticleRadius", Mathf.Clamp(collisionRadius, 0.001f, cellSize * 0.49f));
+            portalShader.SetVector("_InnerCenter", portal.InnerCenter);
+            portalShader.SetVector("_EventHorizonCenter", portal.EventHorizonCenter);
+            portalShader.SetVector("_ExitCenter", portal.ExitCenter);
+            portalShader.Dispatch(applySuctionKernel, particleGroups, 1, 1);
+        }
 
         BuildCellLists(particleGroups, cellGroups);
 
@@ -721,6 +779,11 @@ public sealed class FluidSimulation : MonoBehaviour
 
         integrationShader.Dispatch(integrateKernel, particleGroups, 1, 1);
 
+        if (portalActive)
+        {
+            portalShader.Dispatch(transportKernel, particleGroups, 1, 1);
+        }
+
         if (separationStrength > 0f)
         {
             spatialGridShader.SetFloat("_SeparationRadius", Mathf.Clamp(restSpacing, collisionRadius * 2f, cellSize));
@@ -741,6 +804,7 @@ public sealed class FluidSimulation : MonoBehaviour
             sparseGridShader.SetFloat("_DespawnY", despawnY);
             sparseGridShader.Dispatch(collectParticleTilesKernel, particleGroups, 1, 1);
             tileReadback = AsyncGPUReadback.Request(particleTilesBuffer);
+            tileReadbackStep = simulationStep;
             tileReadbackPending = true;
             nextTileReadbackTime = Time.time + tileRefreshInterval;
         }
@@ -817,6 +881,24 @@ public sealed class FluidSimulation : MonoBehaviour
             return;
         }
 
+        var completedPortalTiles = new List<Vector3Int>();
+        foreach (KeyValuePair<Vector3Int, long> entry in pendingPortalTiles)
+        {
+            if (entry.Value > tileReadbackStep)
+            {
+                occupied.Add(entry.Key);
+            }
+            else
+            {
+                completedPortalTiles.Add(entry.Key);
+            }
+        }
+
+        foreach (Vector3Int tile in completedPortalTiles)
+        {
+            pendingPortalTiles.Remove(tile);
+        }
+
         if (!SetActiveTiles(ExpandTiles(occupied)))
         {
             enabled = false;
@@ -834,7 +916,7 @@ public sealed class FluidSimulation : MonoBehaviour
     {
         ProcessTileReadback();
 
-        if (!enabled || positionBuffer == null || particleProperties == null || sphereMeshSource == null || sphereMeshSource.sharedMesh == null || particleMaterial == null)
+        if (!enabled || sphereMeshSource == null || sphereMeshSource.sharedMesh == null || particleMaterial == null)
         {
             return;
         }
@@ -1180,14 +1262,17 @@ public sealed class FluidSimulation : MonoBehaviour
     {
         tileReadbackPending = false;
         ReleaseTileBuffers();
-        ReleaseTileBuffers();        
+        ReleaseParticleBuffers();
 
         activeTiles.Clear();
         activeTileSet.Clear();
+        pendingPortalTiles.Clear();
         debugCellStates = null;
         particleProperties = null;
         activeParticleCount = 0;
         tileHashCapacity = 0;
+        simulationStep = 0;
+        tileReadbackStep = 0;
     }
 
     private void OnValidate()
@@ -1209,11 +1294,6 @@ internal static class FluidObstacleField
         for (int i = 0; i < count; i++)
         {
             field[i] = 10000f;
-        }
-
-        if (colliders == null)
-        {
-            return field;
         }
 
         Vector3 gridSize = new Vector3(resolution.x, resolution.y, resolution.z) * cellSize;
@@ -1240,21 +1320,15 @@ internal static class FluidObstacleField
 
             if (meshCollider != null)
             {
-                if (meshCollider.sharedMesh == null)
+                Mesh mesh = meshCollider.sharedMesh;
+
+                if (mesh == null || !mesh.isReadable)
                 {
                     continue;
                 }
 
-                try
-                {
-                    meshVertices = meshCollider.sharedMesh.vertices;
-                    triangles = meshCollider.sharedMesh.triangles;
-                }
-                catch (UnityException)
-                {
-                    Debug.LogWarning($"Mesh Collider의 메시 읽기 설정을 확인하세요: {meshCollider.name}", meshCollider);
-                    continue;
-                }
+                meshVertices = mesh.vertices;
+                triangles = mesh.triangles;
 
                 for (int i = 0; i < meshVertices.Length; i++)
                 {
