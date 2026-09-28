@@ -3,12 +3,14 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 public class Stage1SceneContext : MonoBehaviour
 {
-    private const string INITIAL_GUIDE = @"게임에서: 
+    private const string INITIAL_GUIDE = @"반갑습니다! 아래는 기본 조작에 대한 안내입니다.
+
     {Move}: 이동
     {Jump}: 점프
     {Sprint}: 달리기
     {Interact}: 상호작용
-    {Escape}: 메뉴";
+    {Restart}: 재시작
+    {Pause}: 메뉴";
 
     [SerializeField]
     private GameObject _guideCanvas;

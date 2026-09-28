@@ -3,56 +3,38 @@ using UnityEngine;
 public class Managers : MonoBehaviour
 {
     private static Managers _instance;
-
-    private static Managers Instance
-    {
-        get
-        {
-            EnsureExists();
-            return _instance;
-        }
-    }
+    public static Managers Instance { get { Init(); return _instance; } }
 
     private readonly InputManager _inputManager = new();
     public static InputManager Input => Instance._inputManager;
     private readonly GravityManager _gravityManager = new();
     public static GravityManager Gravity => Instance._gravityManager;
 
-    public static void EnsureExists()
+    void Start()
     {
-        if (_instance != null)
-            return;
-
-        Managers existing = FindAnyObjectByType<Managers>();
-        if (existing != null)
-        {
-            _instance = existing;
-            return;
-        }
-
-        GameObject go = GameObject.Find("@App");
-        if (go == null)
-            go = new GameObject("@App");
-
-        Managers managers = go.GetComponent<Managers>();
-        if (managers == null)
-            managers = go.AddComponent<Managers>();
-
-        _instance = managers;
-
-        Instantiate(Resources.Load<GameObject>("KCH/Prefabs/UIs/EventSystem"));
+        Init();
     }
 
-    void Awake()
+    public static void Init()
     {
-        if (_instance != null && _instance != this)
+        if (_instance == null)
         {
-            Destroy(gameObject);
-        }
+            GameObject go = GameObject.Find("@Manager");
+            if (go == null)
+            {
+                go = new GameObject { name = "@Manager" };
+                go.AddComponent<Managers>();
+            }
+            DontDestroyOnLoad(go);
+            _instance = go.GetComponent<Managers>();
 
-        DontDestroyOnLoad(gameObject);
-        Input.Init();
-        Gravity.Init();
+            _instance._inputManager.Init();
+            _instance._gravityManager.Init();
+
+            GameObject eventSystem = Instantiate(Resources.Load<GameObject>("KCH/Prefabs/UIs/EventSystem"));
+
+            eventSystem.transform.SetParent(_instance.transform);
+        }
     }
 
     public static void Clear()

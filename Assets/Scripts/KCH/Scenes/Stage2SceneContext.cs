@@ -3,7 +3,10 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 public class Stage2SceneContext : MonoBehaviour
 {
-    private const string BLACK_HOLE_GUIDE = @"이제 직접 블랙홀을 생성할 수 있습니다!
+    private readonly string BLACK_HOLE_GUIDE = @"이제 직접 블랙홀을 생성할 수 있습니다!
+    블랙홀은 생성 후 {ExistDuration}초 동안 유지된 후 사라집니다.
+    블랙홀이 생성되어있더라도 다른 위치에 즉시 새로 생성할 수 있습니다.
+
     {BlackHole}: 블랙홀 생성";
 
     [SerializeField]
@@ -24,12 +27,6 @@ public class Stage2SceneContext : MonoBehaviour
         _nextStage.OnTriggerEntered += OnNextStageEnter;
     }
 
-    void Start()
-    {
-
-        Managers.Input.SetInputMode(InputMode.Player);
-    }
-
     private void OnBlackHoleGunEnter(Collider other)
     {
         PlayerController player = other.GetComponentInParent<PlayerController>();
@@ -37,7 +34,10 @@ public class Stage2SceneContext : MonoBehaviour
             return;
 
         Managers.Input.SetInputMode(InputMode.UI);
-        _text.text = Util.ReplaceBindingName(BLACK_HOLE_GUIDE);
+
+        string message = Util.ReplaceBindingName(BLACK_HOLE_GUIDE);
+        message = message.Replace("{ExistDuration}", $"{Managers.Gravity.GravityStat.ExistDuration:f0}");
+        _text.text = message;
         _guideCanvas.SetActive(true);
 
         _blackHoleGun.SetActive(false);

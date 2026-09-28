@@ -55,13 +55,7 @@ public class InputManager
 
     public void Clear()
     {
-        _playerMap.Look.performed -= CheckDeviceType;
-        _playerMap.Look.canceled -= CheckDeviceType;
 
-        _inputActions.Disable();
-        _inputActions.Dispose();
-
-        _inputActions = null;
     }
 
     public void SetInputMode(InputMode mode)

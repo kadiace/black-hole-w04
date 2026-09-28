@@ -9,7 +9,11 @@ public static class Util
         "Jump",
         "Sprint",
         "Interact",
-        "Escape",
+        "Restart",
+        "Pause",
+        "BlackHole",
+        "WhiteHole",
+        "Retrieve",
         "Confirm"
     };
 

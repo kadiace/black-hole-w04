@@ -19,19 +19,16 @@ public class GravityManager
     public void Init()
     {
         GravityStat = Resources.Load<GravityStat>("KCH/Datas/GravityStat");
-
-        GameObject blackHole = Object.Instantiate(LoadBlackHole);
-        blackHole.SetActive(false);
-        BlackHole = blackHole.GetComponent<BlackHoleController>();
-
-        GameObject whiteHole = Object.Instantiate(LoadWhiteHole);
-        whiteHole.SetActive(false);
-        WhiteHole = whiteHole.GetComponent<WhiteHoleController>();
+        InstantiateBlackHole();
+        InstantiateWhiteHole();
     }
 
     public void Clear()
     {
-        DestroyHoles();
+        BlackHole.SetActive(false);
+        BlackHole.gameObject.SetActive(false);
+        WhiteHole.SetActive(false);
+        WhiteHole.gameObject.SetActive(false);
     }
 
     public void CreateBlackHole(Vector3 position)
@@ -50,23 +47,24 @@ public class GravityManager
         BlackHole.SetActive(true);
     }
 
+    private void InstantiateBlackHole()
+    {
+        GameObject blackHole = Object.Instantiate(LoadBlackHole);
+        blackHole.transform.SetParent(Managers.Instance.gameObject.transform);
+        blackHole.SetActive(false);
+        BlackHole = blackHole.GetComponent<BlackHoleController>();
+    }
+
+    private void InstantiateWhiteHole()
+    {
+        GameObject whiteHole = Object.Instantiate(LoadWhiteHole);
+        whiteHole.transform.SetParent(Managers.Instance.gameObject.transform);
+        whiteHole.SetActive(false);
+        WhiteHole = whiteHole.GetComponent<WhiteHoleController>();
+    }
+
     public void RetrieveWhiteHole()
     {
         WhiteHole.ProcessEliminate();
-    }
-
-    public void DestroyHoles()
-    {
-        if (BlackHole != null)
-        {
-            Object.Destroy(BlackHole.gameObject);
-            BlackHole = null;
-        }
-
-        if (WhiteHole != null)
-        {
-            Object.Destroy(WhiteHole.gameObject);
-            WhiteHole = null;
-        }
     }
 }

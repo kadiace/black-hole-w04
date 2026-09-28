@@ -99,6 +99,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2367318311682775040}
+  - component: {fileID: 5276490507468585491}
   m_Layer: 0
   m_Name: HoleLauncher
   m_TagString: Untagged
@@ -123,6 +124,19 @@ Transform:
   - {fileID: 8371459155211435093}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5276490507468585491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 237580262488886468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 582387881ef092d4bb328780fe3b9c46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Rotate
+  _rotateSpeed: 90
 --- !u!1 &1745383751320540109
 GameObject:
   m_ObjectHideFlags: 0
