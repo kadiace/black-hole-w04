@@ -2,7 +2,12 @@ using UnityEngine;
 using UnityEngine.UI;
 public class Stage1SceneContext : MonoBehaviour
 {
-    private const string INITIAL_GUIDE = @"안녕 클레오 파트라 세상에서 제일 가는 포테이토 칩";
+    private const string INITIAL_GUIDE = @"게임에서: 
+    {Move}: 이동
+    {Jump}: 점프
+    {Sprint}: 달리기
+    {Interact}: 상호작용
+    {Escape}: 메뉴";
 
     [SerializeField]
     private GameObject _guideCanvas;
@@ -12,7 +17,7 @@ public class Stage1SceneContext : MonoBehaviour
     void Awake()
     {
         Managers.Input.SetInputMode(InputMode.UI);
-        _text.text = INITIAL_GUIDE;
+        _text.text = Util.ReplaceBindingName(INITIAL_GUIDE);
         _guideCanvas.SetActive(true);
     }
 }
