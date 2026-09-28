@@ -119,6 +119,8 @@ public class BlackHoleController : MonoBehaviour
 
     public void SetActive(bool isActivated)
     {
+        if (_processEliminate)
+            return;
         ScalingType nextScalingType = isActivated ? ScalingType.Expand : ScalingType.Shrink;
         if (_scalingType != nextScalingType)
         {
@@ -153,6 +155,7 @@ public class BlackHoleController : MonoBehaviour
     private void Eliminate()
     {
         gameObject.SetActive(false);
+        Managers.Gravity.WhiteHole.SetActive(false);
         OnRemoved?.Invoke();
     }
 
@@ -189,7 +192,7 @@ public class BlackHoleController : MonoBehaviour
             other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
             Managers.Gravity.WhiteHole.IsSand = true;
         }
-                
+
         // 4. Affect fluid
 
     }
