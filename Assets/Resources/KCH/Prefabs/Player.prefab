@@ -474,6 +474,7 @@ GameObject:
   - component: {fileID: 4554026016911210998}
   - component: {fileID: 8266055055557504000}
   - component: {fileID: 3923426805782834773}
+  - component: {fileID: 5829716571067870089}
   m_Layer: 0
   m_Name: Muzzle
   m_TagString: Untagged
