@@ -1,45 +1,26 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-public class Stage1SceneContext : MonoBehaviour
+
+public class Stage1SceneContext : SceneContext
 {
     private const string INITIAL_GUIDE = @"반갑습니다! 아래는 기본 조작에 대한 안내입니다.
 
-    {Move}: 이동
-    {Jump}: 점프
-    {Sprint}: 달리기
-    {Interact}: 상호작용
-    {Restart}: 재시작
-    {Pause}: 메뉴";
+{Move}: 이동
+{Jump}: 점프
+{Sprint}: 달리기
+{Interact}: 상호작용
+{Restart}: 재시작
+{Pause}: 메뉴";
 
-    [SerializeField]
-    private GameObject _guideCanvas;
-    [SerializeField]
-    private Text _text;
-    [SerializeField]
-    private TriggerChecker _nextStage;
-
-    void Awake()
+    protected override void OnInitialize()
     {
-        Managers.Input.SetInputMode(InputMode.UI);
-        _text.text = Util.ReplaceBindingName(INITIAL_GUIDE);
-        _guideCanvas.SetActive(true);
-
-        _nextStage.OnTriggerEntered += OnNextStageEnter;
+        ShowGuide(INITIAL_GUIDE);
 
         Managers.Gravity.CreateWhiteHole(new Vector3(-10, 5, -70));
         StartCoroutine(CreateBlackHoleRoutine(new Vector3(0, 2, -40)));
-    }
 
-    private void OnNextStageEnter(Collider other)
-    {
-        PlayerController player = other.GetComponentInParent<PlayerController>();
-        if (player == null)
-            return;
-
-        Managers.Clear();
-        SceneManager.LoadScene(SceneType.Stage2.ToString());
+        Managers.Gravity.CanFireBlackHole = false;
+        Managers.Gravity.CanFireWhiteHole = false;
     }
 
     private IEnumerator CreateBlackHoleRoutine(Vector3 position)
@@ -51,4 +32,8 @@ public class Stage1SceneContext : MonoBehaviour
             yield return new WaitForSeconds(15f);
         }
     }
+
+    protected override SceneType GetCurrentStage() => SceneType.Stage1;
+
+    protected override SceneType GetNextStage() => SceneType.Stage2;
 }

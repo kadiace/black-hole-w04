@@ -21,16 +21,13 @@ public class GravityManager
         GravityStat = Resources.Load<GravityStat>("KCH/Datas/GravityStat");
         InstantiateBlackHole();
         InstantiateWhiteHole();
-        CanFireBlackHole = true;
-        CanFireWhiteHole = true;
     }
 
     public void Clear()
     {
         BlackHole.SetActive(false);
         BlackHole.gameObject.SetActive(false);
-        WhiteHole.SetActive(false);
-        WhiteHole.gameObject.SetActive(false);
+        RetrieveWhiteHole();
     }
 
     public void CreateBlackHole(Vector3 position)
