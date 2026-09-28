@@ -148,7 +148,7 @@ Transform:
   m_GameObject: {fileID: 27006140}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5, y: 0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: 10.25, y: 13, z: -27}
+  m_LocalPosition: {x: 10.25, y: 13, z: -27.01}
   m_LocalScale: {x: 4, y: 0.25, z: 6}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1477,11 +1477,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 731600f24230cae4598167dfad110860, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage3SceneContext
-  _whiteHoleGun: {fileID: 1799892083}
-  _whiteHoleGunCollider: {fileID: 1507043176}
   _guideCanvas: {fileID: 1582214434}
   _text: {fileID: 1582214430}
   _nextStage: {fileID: 0}
+  _whiteHoleGun: {fileID: 1799892083}
+  _whiteHoleGunCollider: {fileID: 1507043176}
 --- !u!4 &494152793 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6743455138083839868, guid: fa3cd9768595868479ea8f0c1d21aa49, type: 3}
@@ -1548,7 +1548,7 @@ Transform:
   m_GameObject: {fileID: 617611956}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5, y: 0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: 10.25, y: 13, z: -23}
+  m_LocalPosition: {x: 10.25, y: 13, z: -22.99}
   m_LocalScale: {x: 4, y: 0.25, z: 6}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2535,7 +2535,7 @@ MonoBehaviour:
   gravity: -9.81
   externalAcceleration: {x: 0, y: 0, z: 0}
   initialVelocity: {x: 0, y: 0, z: 0}
-  collisionRadius: 0.08
+  collisionRadius: 0.16
   wallBounce: 0.5
   cellSize: 0.4
   restSpacing: 0.4

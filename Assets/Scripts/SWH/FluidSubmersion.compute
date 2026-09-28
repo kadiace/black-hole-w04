@@ -1,0 +1,38 @@
+#pragma kernel CountNearbyParticles
+
+StructuredBuffer<float4> _Positions;
+StructuredBuffer<float4> _Samples;
+RWStructuredBuffer<uint> _SampleCounts;
+
+int _ParticleCount;
+int _SampleCount;
+
+// 외곽 입자 집계,
+[numthreads(64, 1, 1)]
+void CountNearbyParticles(uint3 id : SV_DispatchThreadID)
+{
+    uint sampleIndex = id.x;
+
+    if (sampleIndex >= (uint) _SampleCount)
+    {
+        return;
+    }
+
+    float4 sample = _Samples[sampleIndex];
+    float radius = max(sample.w, 0.001);
+    float radiusSquared = radius * radius;
+    uint count = 0u;
+
+    [loop]
+    for (uint particleIndex = 0u; particleIndex < (uint) _ParticleCount; particleIndex++)
+    {
+        float3 difference = _Positions[particleIndex].xyz - sample.xyz;
+
+        if (dot(difference, difference) <= radiusSquared)
+        {
+            count++;
+        }
+    }
+
+    _SampleCounts[sampleIndex] = count;
+}

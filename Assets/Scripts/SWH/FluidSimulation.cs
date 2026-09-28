@@ -32,6 +32,23 @@ public sealed class FluidSimulation : MonoBehaviour
         }
     }
 
+    private struct ObstaclePose
+    {
+        public Bounds bounds;
+        public Matrix4x4 matrix;
+
+        public ObstaclePose(Collider collider)
+        {
+            bounds = collider.bounds;
+            matrix = collider.transform.localToWorldMatrix;
+        }
+
+        public bool Matches(ObstaclePose other)
+        {
+            return matrix.Equals(other.matrix) && bounds.center == other.bounds.center && bounds.size == other.bounds.size;
+        }
+    }
+
     private const int CellsPerTile = 8;
     private const int CellCountPerTile = 512;
     private const int FaceCountPerTile = 576;
@@ -88,6 +105,13 @@ public sealed class FluidSimulation : MonoBehaviour
     [SerializeField] private bool drawGridBounds = true;
     [SerializeField] private bool drawFluidCells;
 
+    public event Action<ComputeBuffer, int> ParticlePositionsUpdated;
+    public event Action SimulationStopped;
+
+    private int GridCellCount => activeTiles.Count * CellCountPerTile;
+    private int FaceCount => activeTiles.Count * FaceCountPerTile;
+    private float TileWorldSize => CellsPerTile * cellSize;
+
     // 입자 버퍼
     private ComputeBuffer positionBuffer;
     private ComputeBuffer velocityBuffer;
@@ -101,7 +125,7 @@ public sealed class FluidSimulation : MonoBehaviour
     private ComputeBuffer particleTilesBuffer;
     private ComputeBuffer missingTileCountBuffer;
 
-    // 타일 버퍼
+    // 격자 버퍼
     private ComputeBuffer tileHashBuffer;
     private ComputeBuffer tileCoordinatesBuffer;
     private ComputeBuffer cellCountBuffer;
@@ -118,6 +142,7 @@ public sealed class FluidSimulation : MonoBehaviour
     private ComputeBuffer oldVFaceBuffer;
     private ComputeBuffer oldWFaceBuffer;
 
+    // 실행 상태
     private MaterialPropertyBlock particleProperties;
     private FluidPortalBridge portalBridge;
     private readonly List<Vector3Int> activeTiles = new List<Vector3Int>();
@@ -134,15 +159,17 @@ public sealed class FluidSimulation : MonoBehaviour
     private long simulationStep;
     private long tileReadbackStep;
 
-    public event Action<ComputeBuffer, int> ParticlePositionsUpdated;
-    public event Action SimulationStopped;
-    private int GridCellCount => activeTiles.Count * CellCountPerTile;
-    private int FaceCount => activeTiles.Count * FaceCountPerTile;
-    private float TileWorldSize => CellsPerTile * cellSize;
+    // 이동 장애물
+    private readonly Dictionary<Collider, ObstaclePose> movingObstaclePoses = new Dictionary<Collider, ObstaclePose>();
+    private readonly HashSet<Collider> observedMovingObstacles = new HashSet<Collider>();
+    private readonly List<Collider> removedMovingObstacles = new List<Collider>();
+    private readonly HashSet<int> dirtyObstacleTiles = new HashSet<int>();
 
-    // 커널 번호
+    // 타일 커널
     private int clearMissingTilesKernel;
     private int collectParticleTilesKernel;
+
+    // 공간 격자 커널
     private int clearCellsKernel;
     private int assignCellsKernel;
     private int buildCellListsKernel;
@@ -150,9 +177,13 @@ public sealed class FluidSimulation : MonoBehaviour
     private int computeViscosityKernel;
     private int applyPressureKernel;
     private int computeSeparationKernel;
+
+    // 적분 커널
     private int applyForcesKernel;
     private int integrateKernel;
     private int applyPositionCorrectionsKernel;
+
+    // MAC 격자 커널
     private int clearFacesKernel;
     private int particleToUKernel;
     private int particleToVKernel;
@@ -166,6 +197,8 @@ public sealed class FluidSimulation : MonoBehaviour
     private int jacobiBKernel;
     private int projectFacesKernel;
     private int gridToParticlesKernel;
+
+    // 포털 커널
     private int applySuctionKernel;
     private int transportKernel;
 
@@ -736,6 +769,8 @@ public sealed class FluidSimulation : MonoBehaviour
             pendingPortalTiles[WorldToTile(portal.ExitCenter)] = simulationStep;
         }
 
+        RefreshMovingObstacles();
+
         int particleGroups = (activeParticleCount + 63) / 64;
         int cellGroups = (GridCellCount + 63) / 64;
         int faceGroups = (FaceCount + 63) / 64;
@@ -1011,14 +1046,103 @@ public sealed class FluidSimulation : MonoBehaviour
 
         obstacleSdfBuffer.SetData(values);
 
+        movingObstaclePoses.Clear();
+        foreach (Collider obstacle in obstacles)
+        {
+            if (obstacle.attachedRigidbody != null)
+            {
+                movingObstaclePoses[obstacle] = new ObstaclePose(obstacle);
+            }
+        }
+
         if (logResult)
         {
             Debug.Log($"유체 장애물 필드: Collider {obstacles.Length}개, 활성 타일 {activeTiles.Count}개", this);
         }
     }
 
+    // 이동 장애물 갱신
+    private void RefreshMovingObstacles()
+    {
+        Collider[] obstacles = CollectObstacles();
+        observedMovingObstacles.Clear();
+        removedMovingObstacles.Clear();
+        dirtyObstacleTiles.Clear();
+
+        foreach (Collider obstacle in obstacles)
+        {
+            if (obstacle.attachedRigidbody == null)
+            {
+                continue;
+            }
+
+            observedMovingObstacles.Add(obstacle);
+            ObstaclePose current = new ObstaclePose(obstacle);
+
+            if (movingObstaclePoses.TryGetValue(obstacle, out ObstaclePose previous))
+            {
+                if (previous.Matches(current))
+                {
+                    continue;
+                }
+
+                MarkObstacleTiles(previous.bounds);
+            }
+
+            MarkObstacleTiles(current.bounds);
+            movingObstaclePoses[obstacle] = current;
+        }
+
+        foreach (KeyValuePair<Collider, ObstaclePose> entry in movingObstaclePoses)
+        {
+            if (observedMovingObstacles.Contains(entry.Key))
+            {
+                continue;
+            }
+
+            MarkObstacleTiles(entry.Value.bounds);
+            removedMovingObstacles.Add(entry.Key);
+        }
+
+        foreach (Collider obstacle in removedMovingObstacles)
+        {
+            movingObstaclePoses.Remove(obstacle);
+        }
+
+        Vector3Int resolution = new Vector3Int(CellsPerTile, CellsPerTile, CellsPerTile);
+
+        foreach (int tileIndex in dirtyObstacleTiles)
+        {
+            Vector3Int tile = activeTiles[tileIndex];
+            Vector3 tileMin = new Vector3(tile.x, tile.y, tile.z) * TileWorldSize;
+            float[] values = FluidObstacleField.Build(tileMin, resolution, cellSize, obstacles);
+            obstacleSdfBuffer.SetData(values, 0, tileIndex * CellCountPerTile, CellCountPerTile);
+        }
+    }
+
+    // 변경된 타일 찾기
+    private void MarkObstacleTiles(Bounds bounds)
+    {
+        bounds.Expand(cellSize * 6f);
+        Vector3 tileSize = Vector3.one * TileWorldSize;
+
+        for (int i = 0; i < activeTiles.Count; i++)
+        {
+            Vector3Int tile = activeTiles[i];
+            Vector3 tileMin = new Vector3(tile.x, tile.y, tile.z) * TileWorldSize;
+            Bounds tileBounds = new Bounds(tileMin + tileSize * 0.5f, tileSize);
+
+            if (tileBounds.Intersects(bounds))
+            {
+                dirtyObstacleTiles.Add(i);
+            }
+        }
+    }
+
+    // 장애물 수집
     private Collider[] CollectObstacles()
     {
+        Physics.SyncTransforms();
         var selected = new HashSet<Collider>();
 
         if (staticObstacles != null)
@@ -1034,7 +1158,6 @@ public sealed class FluidSimulation : MonoBehaviour
 
         if (autoCollectObstacles)
         {
-            Physics.SyncTransforms();
             Collider[] sceneColliders = UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsSortMode.None);
 
             foreach (Collider obstacle in sceneColliders)
@@ -1078,7 +1201,7 @@ public sealed class FluidSimulation : MonoBehaviour
             return false;
         }
 
-        return obstacle is BoxCollider || obstacle is SphereCollider || obstacle is MeshCollider;
+        return obstacle is BoxCollider || obstacle is SphereCollider || obstacle is CapsuleCollider || obstacle is MeshCollider;
     }
 
     // 진단
@@ -1246,7 +1369,6 @@ public sealed class FluidSimulation : MonoBehaviour
         oldWFaceBuffer = ReleaseBuffer(oldWFaceBuffer);
     }
 
-    // 입자 버퍼 해제
     private void ReleaseParticleBuffers()
     {
         positionBuffer = ReleaseBuffer(positionBuffer);
@@ -1272,6 +1394,10 @@ public sealed class FluidSimulation : MonoBehaviour
         activeTiles.Clear();
         activeTileSet.Clear();
         pendingPortalTiles.Clear();
+        movingObstaclePoses.Clear();
+        observedMovingObstacles.Clear();
+        removedMovingObstacles.Clear();
+        dirtyObstacleTiles.Clear();
         debugCellStates = null;
         particleProperties = null;
         activeParticleCount = 0;
@@ -1289,6 +1415,7 @@ public sealed class FluidSimulation : MonoBehaviour
     }
 }
 
+// 콜라이더 거리
 internal static class FluidObstacleField
 {
     public static float[] Build(Vector3 gridMin, Vector3Int resolution, float cellSize, Collider[] colliders)
@@ -1340,7 +1467,7 @@ internal static class FluidObstacleField
                     meshVertices[i] = meshCollider.transform.TransformPoint(meshVertices[i]);
                 }
             }
-            else if (!(collider is BoxCollider) && !(collider is SphereCollider))
+            else if (!(collider is BoxCollider) && !(collider is SphereCollider) && !(collider is CapsuleCollider))
             {
                 continue;
             }
@@ -1367,6 +1494,10 @@ internal static class FluidObstacleField
                         else if (collider is SphereCollider sphere)
                         {
                             distance = SphereDistance(sphere, point);
+                        }
+                        else if (collider is CapsuleCollider capsule)
+                        {
+                            distance = CapsuleDistance(capsule, point);
                         }
                         else
                         {
@@ -1399,6 +1530,29 @@ internal static class FluidObstacleField
         Vector3 scale = sphere.transform.lossyScale;
         float radius = sphere.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Max(Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
         return Vector3.Distance(point, sphere.transform.TransformPoint(sphere.center)) - radius;
+    }
+
+    // 캡슐 거리
+    private static float CapsuleDistance(CapsuleCollider capsule, Vector3 point)
+    {
+        Vector3 scale = capsule.transform.lossyScale;
+        Vector3 absoluteScale = new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+
+        Vector3 localAxis = capsule.direction == 0 ? Vector3.right : capsule.direction == 1 ? Vector3.up : Vector3.forward;
+        Vector3 worldAxis = capsule.transform.TransformDirection(localAxis).normalized;
+
+        float axisScale = capsule.direction == 0 ? absoluteScale.x : capsule.direction == 1 ? absoluteScale.y : absoluteScale.z;
+        float radiusScale = capsule.direction == 0 ? Mathf.Max(absoluteScale.y, absoluteScale.z) : capsule.direction == 1 ? Mathf.Max(absoluteScale.x, absoluteScale.z) : Mathf.Max(absoluteScale.x, absoluteScale.y);
+
+        float radius = capsule.radius * radiusScale;
+        float halfSegment = Mathf.Max(0f, capsule.height * axisScale * 0.5f - radius);
+        Vector3 center = capsule.transform.TransformPoint(capsule.center);
+        Vector3 start = center - worldAxis * halfSegment;
+        Vector3 end = center + worldAxis * halfSegment;
+        Vector3 segment = end - start;
+
+        float t = segment.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(point - start, segment) / segment.sqrMagnitude) : 0f;
+        return Vector3.Distance(point, Vector3.Lerp(start, end, t)) - radius;
     }
 
     private static float MeshDistance(Vector3[] vertices, int[] triangles, Vector3 point, float cellSize)
