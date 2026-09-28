@@ -139,6 +139,8 @@ public class WhiteHoleController : MonoBehaviour
     {
         _sand.GetComponent<SandFall>().Disable();
         _isSand = false;
+
+        _emission.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 }

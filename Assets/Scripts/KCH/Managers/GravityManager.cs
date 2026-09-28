@@ -21,6 +21,8 @@ public class GravityManager
         GravityStat = Resources.Load<GravityStat>("KCH/Datas/GravityStat");
         InstantiateBlackHole();
         InstantiateWhiteHole();
+        CanFireBlackHole = true;
+        CanFireWhiteHole = true;
     }
 
     public void Clear()
