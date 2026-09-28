@@ -23,6 +23,9 @@ public class BlackHoleController : MonoBehaviour
     private bool _isEliminating;
 
     public System.Action OnRemoved;
+    public SphereCollider InnerCollider => _inner.GetComponent<SphereCollider>();
+    public SphereCollider EventHorizonCollider => _eventHorizon.GetComponent<SphereCollider>();
+    public bool IsFullyExpanded => isActiveAndEnabled && !_isScaling && !_isEliminating && _scalingType == ScalingType.Expand;
 
     private WallCutter cutter;
 
@@ -178,7 +181,7 @@ public class BlackHoleController : MonoBehaviour
 
         // 2. Cut Rigid Body object
 
-        // 3. Affect fluid
+        // 3. Affect Sand
         if (other.CompareTag("Sand"))
         {
             Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
@@ -186,6 +189,9 @@ public class BlackHoleController : MonoBehaviour
             other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
             Managers.Gravity.WhiteHole.IsSand = true;
         }
+                
+        // 4. Affect fluid
+
     }
 
     private void EventHorizonEnter(Collider other)
