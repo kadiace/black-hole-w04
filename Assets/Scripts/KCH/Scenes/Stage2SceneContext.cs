@@ -25,6 +25,8 @@ public class Stage2SceneContext : MonoBehaviour
         Managers.Input.SetInputMode(InputMode.Player);
         _blackHoleGunCollider.OnTriggerEntered += OnBlackHoleGunEnter;
         _nextStage.OnTriggerEntered += OnNextStageEnter;
+
+        Managers.Gravity.CreateWhiteHole(new Vector3(-3f, 7.5f, -10));
     }
 
     private void OnBlackHoleGunEnter(Collider other)
@@ -51,6 +53,6 @@ public class Stage2SceneContext : MonoBehaviour
             return;
 
         Managers.Clear();
-        SceneManager.LoadScene(SceneType.Stage3Test.ToString());
+        SceneManager.LoadScene(SceneType.Stage3.ToString());
     }
 }

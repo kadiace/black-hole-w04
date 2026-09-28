@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GravityStat
   _normalGravity: 30
   _blackHoleGravity: 15
-  _outerScale: 20
+  _outerScale: 15
   _innerScale: 10
-  _eventHorizonScale: 5
+  _eventHorizonScale: 3
   _initScale: 1
   _expandDuration: 5
   _shrinkDuration: 2
