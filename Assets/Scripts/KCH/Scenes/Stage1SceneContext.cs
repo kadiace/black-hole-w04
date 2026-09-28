@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -26,6 +27,9 @@ public class Stage1SceneContext : MonoBehaviour
         _guideCanvas.SetActive(true);
 
         _nextStage.OnTriggerEntered += OnNextStageEnter;
+
+        Managers.Gravity.CreateWhiteHole(new Vector3(-10, 5, -70));
+        StartCoroutine(CreateBlackHoleRoutine(new Vector3(0, 2, -40)));
     }
 
     private void OnNextStageEnter(Collider other)
@@ -35,6 +39,16 @@ public class Stage1SceneContext : MonoBehaviour
             return;
 
         Managers.Clear();
-        SceneManager.LoadScene(SceneType.Stage2Test.ToString());
+        SceneManager.LoadScene(SceneType.Stage2.ToString());
+    }
+
+    private IEnumerator CreateBlackHoleRoutine(Vector3 position)
+    {
+        while (true)
+        {
+            Managers.Gravity.CreateBlackHole(position);
+
+            yield return new WaitForSeconds(15f);
+        }
     }
 }
