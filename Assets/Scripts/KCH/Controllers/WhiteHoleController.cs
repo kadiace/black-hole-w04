@@ -74,7 +74,7 @@ public class WhiteHoleController : MonoBehaviour
                 Eliminate();
         }
 
-        if (!Managers.Gravity.IsBlackHoleEnabled || _isScaling || !_isSand)
+        if (!Managers.Gravity.IsBlackHoleActive || _isScaling || !_isSand)
             return;
 
 
