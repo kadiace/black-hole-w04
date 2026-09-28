@@ -1,32 +1,27 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-public class Stage2SceneContext : MonoBehaviour
+
+public class Stage2SceneContext : SceneContext
 {
-    private readonly string BLACK_HOLE_GUIDE = @"이제 직접 블랙홀을 생성할 수 있습니다!
-    블랙홀은 생성 후 {ExistDuration}초 동안 유지된 후 사라집니다.
-    블랙홀이 생성되어있더라도 다른 위치에 즉시 새로 생성할 수 있습니다.
+    private const string BLACK_HOLE_GUIDE = @"이제 직접 블랙홀을 생성할 수 있습니다!
+블랙홀은 생성 후 {ExistDuration}초 동안 유지된 후 사라집니다.
+블랙홀이 생성되어있더라도 다른 위치에 즉시 새로 생성할 수 있습니다.
 
-    {BlackHole}: 블랙홀 생성";
+{BlackHole}: 블랙홀 생성";
 
+    [Header("Black Hole Gun")]
     [SerializeField]
     private GameObject _blackHoleGun;
     [SerializeField]
     private TriggerChecker _blackHoleGunCollider;
-    [SerializeField]
-    private GameObject _guideCanvas;
-    [SerializeField]
-    private Text _text;
-    [SerializeField]
-    private TriggerChecker _nextStage;
 
-    void Awake()
+    protected override void OnInitialize()
     {
-        Managers.Input.SetInputMode(InputMode.Player);
         _blackHoleGunCollider.OnTriggerEntered += OnBlackHoleGunEnter;
-        _nextStage.OnTriggerEntered += OnNextStageEnter;
 
         Managers.Gravity.CreateWhiteHole(new Vector3(-3f, 7.5f, -10));
+
+        Managers.Gravity.CanFireBlackHole = false;
+        Managers.Gravity.CanFireWhiteHole = false;
     }
 
     private void OnBlackHoleGunEnter(Collider other)
@@ -35,24 +30,17 @@ public class Stage2SceneContext : MonoBehaviour
         if (player == null)
             return;
 
-        Managers.Input.SetInputMode(InputMode.UI);
+        string message = BLACK_HOLE_GUIDE.Replace(
+            "{ExistDuration}",
+            $"{Managers.Gravity.GravityStat.ExistDuration:f0}");
 
-        string message = Util.ReplaceBindingName(BLACK_HOLE_GUIDE);
-        message = message.Replace("{ExistDuration}", $"{Managers.Gravity.GravityStat.ExistDuration:f0}");
-        _text.text = message;
-        _guideCanvas.SetActive(true);
+        ShowGuide(message);
 
         _blackHoleGun.SetActive(false);
         Managers.Gravity.CanFireBlackHole = true;
     }
 
-    private void OnNextStageEnter(Collider other)
-    {
-        PlayerController player = other.GetComponentInParent<PlayerController>();
-        if (player == null)
-            return;
+    protected override SceneType GetCurrentStage() => SceneType.Stage2;
 
-        Managers.Clear();
-        SceneManager.LoadScene(SceneType.Stage3.ToString());
-    }
+    protected override SceneType GetNextStage() => SceneType.Stage3;
 }
