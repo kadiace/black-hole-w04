@@ -27,7 +27,7 @@ public class GrabbablePiece : Sliceable, IPressable, IInteractable
             groundCheckDistance = 2f,
             groundSkin = 0.02f,
             regrabDelay = 0.5f,
-            interactLayer = "interact",
+            interactLayer = "Ground",
         };
     }
 

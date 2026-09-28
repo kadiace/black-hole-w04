@@ -13,12 +13,16 @@ public class Stage2SceneContext : SceneContext
     private GameObject _blackHoleGun;
     [SerializeField]
     private TriggerChecker _blackHoleGunCollider;
+    [Header("WhiteHole Move Collider")]
+    [SerializeField]
+    private TriggerChecker _whiteHoleMoveCollider;
 
     protected override void OnInitialize()
     {
         _blackHoleGunCollider.OnTriggerEntered += OnBlackHoleGunEnter;
+        _whiteHoleMoveCollider.OnTriggerEntered += OnWhiteHoleMoveEnter;
 
-        Managers.Gravity.CreateWhiteHole(new Vector3(-3f, 7.5f, -10));
+        Managers.Gravity.CreateWhiteHole(new Vector3(-8, 5, -5));
 
         Managers.Gravity.CanFireBlackHole = false;
         Managers.Gravity.CanFireWhiteHole = false;
@@ -38,6 +42,11 @@ public class Stage2SceneContext : SceneContext
 
         _blackHoleGun.SetActive(false);
         Managers.Gravity.CanFireBlackHole = true;
+    }
+
+    private void OnWhiteHoleMoveEnter(Collider other)
+    {
+        Managers.Gravity.CreateWhiteHole(new Vector3(5, 6, -80));
     }
 
     protected override SceneType GetCurrentStage() => SceneType.Stage2;

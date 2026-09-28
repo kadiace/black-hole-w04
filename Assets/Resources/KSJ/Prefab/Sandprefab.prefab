@@ -60,7 +60,7 @@ MonoBehaviour:
   spaceY: 0
   flowTrigger: {fileID: 0}
   lowerSpeed: 100
-  minimumHeight: -5
+  minimumHeight: 0
   flowRate: 3
   loseSand: 0
 --- !u!33 &4618873162303270020
