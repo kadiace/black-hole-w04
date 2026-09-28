@@ -78,9 +78,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\uC804\uB825\uC744 \uBAA8\uB450 \uC18C\uBAA8\uD588\uC2B5\uB2C8\uB2E4.\r\n   
-    30\uCD08 \uC548\uC73C\uB85C \uC804\uB825 \uACF5\uAE09\uC6D0\uC744 \uCC3E\uC9C0
-    \uBABB\uD558\uBA74 \uC885\uC790 \uBCF4\uAD00\uC18C\uC758 \uBCF5\uAD6C\uAC00 \uBD88\uAC00\uB2A5\uD574\uC9D1\uB2C8\uB2E4."
+  m_Text: "\uD14D\uC2A4\uD2B8\uC785\uB2C8\uB2E4."
 --- !u!1 &6111779121081666459
 GameObject:
   m_ObjectHideFlags: 0
@@ -177,7 +175,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6844568154633177126
 RectTransform:
   m_ObjectHideFlags: 0
@@ -273,6 +271,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35455eefb1de93a44809eef6d940e706, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GuideCanvas
+  _button: {fileID: 7233003029355868975}
 --- !u!1 &6304774811240299987
 GameObject:
   m_ObjectHideFlags: 0
@@ -473,13 +472,13 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: 
+      - m_Target: {fileID: -4602587650964510666}
+        m_TargetAssemblyTypeName: GuideCanvas, Assembly-CSharp
+        m_MethodName: OnButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 

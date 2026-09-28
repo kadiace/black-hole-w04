@@ -2,12 +2,15 @@ using UnityEngine;
 
 public class GravityManager
 {
+    public bool CanFireBlackHole { get; set; }
+    public bool CanFireWhiteHole { get; set; }
+
     public GravityStat GravityStat { get; private set; }
     public BlackHoleController BlackHole { get; set; }
     public WhiteHoleController WhiteHole { get; set; }
 
-    public bool IsBlackHoleEnabled => BlackHole.gameObject.activeSelf;
-    public bool IsWhiteHoleEnabled => WhiteHole.gameObject.activeSelf;
+    public bool IsBlackHoleActive => BlackHole.gameObject.activeSelf;
+    public bool IsWhiteHoleActive => WhiteHole.gameObject.activeSelf;
     public bool ProcessWhiteHoleEliminate { get; set; }
 
     public GameObject LoadBlackHole => Resources.Load<GameObject>("KCH/Prefabs/BlackHole");

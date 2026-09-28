@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 public class Stage1SceneContext : MonoBehaviour
 {
@@ -13,11 +14,25 @@ public class Stage1SceneContext : MonoBehaviour
     private GameObject _guideCanvas;
     [SerializeField]
     private Text _text;
+    [SerializeField]
+    private TriggerChecker _nextStage;
 
     void Awake()
     {
         Managers.Input.SetInputMode(InputMode.UI);
         _text.text = Util.ReplaceBindingName(INITIAL_GUIDE);
         _guideCanvas.SetActive(true);
+
+        _nextStage.OnTriggerEntered += OnNextStageEnter;
+    }
+
+    private void OnNextStageEnter(Collider other)
+    {
+        PlayerController player = other.GetComponentInParent<PlayerController>();
+        if (player == null)
+            return;
+
+        Managers.Clear();
+        SceneManager.LoadScene(SceneType.Stage2Test.ToString());
     }
 }
