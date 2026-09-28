@@ -1,5 +1,6 @@
 using UnityEngine;
 
+
 [RequireComponent(typeof(LineRenderer))]
 public class BlackHolePathController : MonoBehaviour
 {
@@ -15,7 +16,8 @@ public class BlackHolePathController : MonoBehaviour
     public float MaxDistance => nearTrans != null ? Vector3.Distance(nearTrans.Value, transform.position) : _maxDistance;
     [SerializeField]
     private float _moveSpeed;
-    private GameObject _holePreview;
+    [SerializeField]
+    private HolePreview _holePreview;
     private float _distance;
     private Vector3? nearTrans;
     private int _hitMask = 0;
@@ -27,8 +29,8 @@ public class BlackHolePathController : MonoBehaviour
 
     void Awake()
     {
-        _holePreview = Instantiate(Resources.Load<GameObject>("KCH/Prefabs/HolePreview"));
-        _holePreview.SetActive(false);
+        _holePreview = Instantiate(Resources.Load<GameObject>("KCH/Prefabs/HolePreview")).GetComponent<HolePreview>();
+        _holePreview.Hide();
 
         _lineRenderer = GetComponent<LineRenderer>();
         _lineRenderer.useWorldSpace = true;
@@ -54,7 +56,7 @@ public class BlackHolePathController : MonoBehaviour
         if (Managers.Input.BlackHolePressed)
         {
             _lineRenderer.enabled = true;
-            _holePreview.SetActive(true);
+            _holePreview.Show(HolePreview.HoleType.Black, Managers.Gravity.GravityStat.EventHorizonScale, Managers.Gravity.GravityStat.InnerScale);
             _isLProcessed = true;
         }
         if (Managers.Input.BlackHoleHeld)
@@ -66,7 +68,7 @@ public class BlackHolePathController : MonoBehaviour
             Managers.Gravity.CreateBlackHole(transform.position + transform.forward * _distance);
 
             _lineRenderer.enabled = false;
-            _holePreview.SetActive(false);
+            _holePreview.Hide();
             _isLProcessed = false;
             _distance = _minDistance;
         }
@@ -77,7 +79,7 @@ public class BlackHolePathController : MonoBehaviour
         if (Managers.Input.WhiteHolePressed)
         {
             _lineRenderer.enabled = true;
-            _holePreview.SetActive(true);
+            _holePreview.Show(HolePreview.HoleType.White, Managers.Gravity.GravityStat.EventHorizonScale, 0);
             _isRProcessed = true;
         }
         if (Managers.Input.WhiteHoleHeld)
@@ -89,7 +91,7 @@ public class BlackHolePathController : MonoBehaviour
             Managers.Gravity.CreateWhiteHole(transform.position + transform.forward * _distance);
 
             _lineRenderer.enabled = false;
-            _holePreview.SetActive(false);
+            _holePreview.Hide();
             _isRProcessed = false;
             _distance = _minDistance;
         }

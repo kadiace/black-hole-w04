@@ -25,7 +25,8 @@ public class Stage1SceneContext : MonoBehaviour
         _text.text = Util.ReplaceBindingName(INITIAL_GUIDE);
         _guideCanvas.SetActive(true);
 
-        _nextStage.OnTriggerEntered += OnNextStageEnter;
+        if (_nextStage)
+            _nextStage.OnTriggerEntered += OnNextStageEnter;
     }
 
     private void OnNextStageEnter(Collider other)
