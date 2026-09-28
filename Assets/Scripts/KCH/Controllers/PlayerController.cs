@@ -230,7 +230,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
 
     private void ProcessRotation()
     {
-        Vector3 targetUp = _up;
+        Vector3 targetUp = _isGrounded ? _groundNormal : _up;
         Vector3 baseUp = _baseRotation * Vector3.up;
         Quaternion gravityCorrection = Quaternion.FromToRotation(baseUp, targetUp);
         _baseRotation = gravityCorrection * _baseRotation;
@@ -261,7 +261,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
 
         foreach (ContactPoint contact in collision.contacts)
         {
-            float groundDot = Vector3.Dot(contact.normal, Vector3.up);
+            float groundDot = Vector3.Dot(contact.normal, _up);
 
             if (groundDot < bestGroundDot)
                 continue;
@@ -291,9 +291,8 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
         moveDirection.Normalize();
 
         float speed = _sprintInput ? _sprintSpeed : _moveSpeed;
-        Vector3 movement = speed * moveDirection;// * Time.fixedDeltaTime;
+        Vector3 movement = speed * moveDirection;
         _rb.linearVelocity = movement;
-        //_rb.MovePosition(_rb.position + movement);
     }
 
     private void ProcessAirMove()
@@ -304,7 +303,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
 
     private Vector3 GetMoveDirection()
     {
-        Vector3 up = _up;
+        Vector3 up = _isGrounded ? _groundNormal : _up;
         Vector3 forward = Vector3.ProjectOnPlane(_cameraTarget.transform.forward, up).normalized;
         Vector3 right = Vector3.Cross(up, forward).normalized;
         return right * _moveInput.x + forward * _moveInput.y;
@@ -359,4 +358,3 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
         }
     }
 }
-
