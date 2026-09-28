@@ -18,9 +18,9 @@ MonoBehaviour:
   _innerScale: 10
   _eventHorizonScale: 5
   _initScale: 1
-  _expandDuration: 1
+  _expandDuration: 5
   _shrinkDuration: 2
-  _existDuration: 5
+  _existDuration: 10
   _blackHoleShrinkCurve:
     serializedVersion: 2
     m_Curve:

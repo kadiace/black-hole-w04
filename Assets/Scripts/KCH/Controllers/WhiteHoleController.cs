@@ -73,6 +73,14 @@ public class WhiteHoleController : MonoBehaviour
             if (_isEliminating)
                 Eliminate();
         }
+
+        if (!Managers.Gravity.IsBlackHoleActive || _isScaling || !_isSand)
+            return;
+
+
+        _sand.GetComponent<SandFall>().Enable();
+
+
     }
 
     void OnEnable()
@@ -82,7 +90,7 @@ public class WhiteHoleController : MonoBehaviour
         _isScaling = false;
         _scalingType = ScalingType.Shrink;
         _eventHorizon.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
-        SetActive(Managers.Gravity.BlackHole == null ? false : Managers.Gravity.IsBlackHoleEnabled);
+        SetActive(Managers.Gravity.BlackHole == null ? false : Managers.Gravity.IsBlackHoleActive);
     }
 
     public void SetActive(bool isActivated)
@@ -101,7 +109,11 @@ public class WhiteHoleController : MonoBehaviour
         if (isActivated)
         {
             _emission.gameObject.SetActive(true);
-            _sand.SetActive(true);
+        }
+        else
+        {
+            _sand.GetComponent<SandFall>().Disable();
+            _isSand = false;
         }
     }
 
@@ -125,8 +137,8 @@ public class WhiteHoleController : MonoBehaviour
 
     private void Eliminate()
     {
-        _sand.SetActive(false);
-        IsSand = false;
+        _sand.GetComponent<SandFall>().Disable();
+        _isSand = false;
         gameObject.SetActive(false);
     }
 }

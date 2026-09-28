@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class WhiteholeMeshMake : MonoBehaviour
 {
@@ -16,7 +15,7 @@ public class WhiteholeMeshMake : MonoBehaviour
     public float spaceY;
     public float vertexSpacing = 0.25f;
 
-  
+
 
     private void Awake()
     {
@@ -24,7 +23,7 @@ public class WhiteholeMeshMake : MonoBehaviour
         GetComponent<MeshFilter>().mesh = m_mesh;
     }
 
-    
+
 
     public void UpdateMesh()
     {
@@ -40,10 +39,10 @@ public class WhiteholeMeshMake : MonoBehaviour
     private void OnDrawGizmos()
     {
 
-        if(m_vertices == null)
+        if (m_vertices == null)
             return;
 
-        for(int i = 0; i < m_vertices.Length; i++)
+        for (int i = 0; i < m_vertices.Length; i++)
         {
             Gizmos.DrawSphere(m_vertices[i], .1f);
         }
@@ -66,7 +65,7 @@ public class WhiteholeMeshMake : MonoBehaviour
         spaceY = depth / zSize;
 
         m_vertices = new Vector3[(xSize + 1) * (zSize + 1)];
-        Vector2[] uvs = new Vector2[m_vertices.Length];
+        uvs = new Vector2[m_vertices.Length];
 
         for (int z = 0; z <= zSize; z++)
         {

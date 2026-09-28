@@ -14,9 +14,10 @@ GameObject:
   - component: {fileID: 299292481154871774}
   - component: {fileID: 864406631989636983}
   - component: {fileID: 5839171113524132024}
-  m_Layer: 0
+  - component: {fileID: 3882034830627240421}
+  m_Layer: 6
   m_Name: Sandprefab
-  m_TagString: Untagged
+  m_TagString: Sand
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -57,8 +58,11 @@ MonoBehaviour:
   reposeAngle: 20
   spaceX: 0
   spaceY: 0
+  flowTrigger: {fileID: 0}
+  lowerSpeed: 100
+  minimumHeight: -5
   flowRate: 3
-  losesand: 0
+  loseSand: 0
 --- !u!33 &4618873162303270020
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -155,3 +159,30 @@ MonoBehaviour:
   spaceX: 0
   spaceY: 0
   vertexSpacing: 0.25
+--- !u!54 &3882034830627240421
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2444789786704727229}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0

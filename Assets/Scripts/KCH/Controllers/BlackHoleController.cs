@@ -23,6 +23,9 @@ public class BlackHoleController : MonoBehaviour
     private bool _isEliminating;
 
     public System.Action OnRemoved;
+    public SphereCollider InnerCollider => _inner.GetComponent<SphereCollider>();
+    public SphereCollider EventHorizonCollider => _eventHorizon.GetComponent<SphereCollider>();
+    public bool IsFullyExpanded => isActiveAndEnabled && !_isScaling && !_isEliminating && _scalingType == ScalingType.Expand;
 
     private WallCutter cutter;
 
@@ -111,7 +114,7 @@ public class BlackHoleController : MonoBehaviour
         main.startLifetime = Managers.Gravity.GravityStat.InitScale / 30;
 
         _timer = Managers.Gravity.GravityStat.ExistDuration;
-        SetActive(Managers.Gravity.WhiteHole != null && Managers.Gravity.IsWhiteHoleEnabled);
+        SetActive(Managers.Gravity.WhiteHole != null && Managers.Gravity.IsWhiteHoleActive);
     }
 
     public void SetActive(bool isActivated)
@@ -155,7 +158,7 @@ public class BlackHoleController : MonoBehaviour
 
     private void OuterEnter(Collider other)
     {
-        if (!Managers.Gravity.IsWhiteHoleEnabled || _isScaling)
+        if (!Managers.Gravity.IsWhiteHoleActive || _isScaling)
             return;
 
         GravityController gravityController = other.GetComponentInParent<GravityController>();
@@ -171,26 +174,29 @@ public class BlackHoleController : MonoBehaviour
 
     private void InnerEnter(Collider other)
     {
-        if (!Managers.Gravity.IsWhiteHoleEnabled || _isScaling)
+        if (!Managers.Gravity.IsWhiteHoleActive || _isScaling)
             return;
 
         // 1. Rotate Player up to -GravityDir
 
         // 2. Cut Rigid Body object
 
-        // 3. Affect fluid
+        // 3. Affect Sand
         if (other.CompareTag("Sand"))
         {
-            Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
-            Debug.Log(GetComponent<SandMesh>());
+            //Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
+            //Debug.Log(other.GetComponent<SandMesh>());
             other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
             Managers.Gravity.WhiteHole.IsSand = true;
         }
+                
+        // 4. Affect fluid
+
     }
 
     private void EventHorizonEnter(Collider other)
     {
-        if (!Managers.Gravity.IsWhiteHoleEnabled || _isScaling)
+        if (!Managers.Gravity.IsWhiteHoleActive || _isScaling)
             return;
 
         Rigidbody rb = other.GetComponentInParent<Rigidbody>();

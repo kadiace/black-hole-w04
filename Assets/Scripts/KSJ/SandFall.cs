@@ -9,55 +9,73 @@ public class SandFall : MonoBehaviour
 
     public GameObject sandPrefab;
 
-    public float fallTimer = 2f;
+    public float fallTimer = 1f;
 
     private float m_timer;
 
     private GameObject m_currentSand;
+
+    public void Start()
+    {
+        m_timer = fallTimer;
+    }
     void Fall()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, Vector3.down, out  hit, range, groundMask))
+        RaycastHit[] hits = Physics.RaycastAll(transform.position + Vector3.up * range, Vector3.down, range * 2, groundMask);
+
+        if (hits.Length == 0)
+            return;
+
+        // 맞은 것 중 가장 가까운 모래를 찾습니다.
+        bool foundSand = false;
+        RaycastHit sandHit = default;
+        SandMesh hitSand = null;
+
+        foreach (RaycastHit hit in hits)
         {
-            if (m_currentSand == null)
+            SandMesh sand = hit.collider.GetComponent<SandMesh>();
+
+
+
+
+            if (sand != null && (!foundSand || hit.distance < sandHit.distance))
             {
-
-                if (hit.collider.gameObject.GetComponent<SandMesh>())
-                {
-                    m_currentSand = hit.collider.gameObject;
-                    
-                }
-                else
-                {
-                    m_currentSand = Instantiate(
-                        sandPrefab,
-                        hit.point,
-                        Quaternion.identity
-                    );
-                    WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
-                    if ((flowSandMask & (1 << hit.collider.gameObject.layer)) != 0)
-                    {
-                        m_currentSand.GetComponent<SandMesh>().losesand = true;
-                    }
-
-                    meshMaker.GenerateOnGround(hit);
-                }
-
-                
-                
-                
-            }
-            else
-            {
-                m_currentSand.GetComponent<SandMesh>().SandUp(hit);
-                //Debug.Log("레이 호출");
+                foundSand = true;
+                sandHit = hit;
+                hitSand = sand;
             }
         }
-        //else
-        //{
-        //    m_currentSand.GetComponent<SandMesh>().SandUp(hit);
-        //    Debug.Log("호출");
-        //}
+
+        // 모래가 맞았으면 모래만 올리고 종료
+        if (foundSand)
+        {
+            m_currentSand = hitSand.gameObject;
+            hitSand.SandUp(sandHit);
+            return;
+        }
+
+        // 모래가 없을 때만 가장 가까운 바닥
+        RaycastHit groundHit = hits[0];
+
+        foreach (RaycastHit hit in hits)
+        {
+            if (hit.distance < groundHit.distance)
+                groundHit = hit;
+        }
+
+        m_currentSand = Instantiate(sandPrefab, groundHit.point, Quaternion.identity);
+
+        SandMesh newSand = m_currentSand.GetComponent<SandMesh>();
+
+        if ((flowSandMask & (1 << groundHit.collider.gameObject.layer)) != 0)
+            newSand.loseSand = true;
+
+        WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
+
+        meshMaker.GenerateOnGround(groundHit);
+        newSand.SandUp(groundHit);
+
+
 
 
     }
@@ -71,5 +89,18 @@ public class SandFall : MonoBehaviour
             Fall();
             m_timer = 0;
         }
+    }
+
+    public void Disable()
+    {
+        m_currentSand = null;
+        m_timer = fallTimer;
+        gameObject.SetActive(false);
+    }
+
+    public void Enable()
+    {
+
+        gameObject.SetActive(true);
     }
 }
