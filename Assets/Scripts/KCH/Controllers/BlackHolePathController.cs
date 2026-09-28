@@ -37,9 +37,9 @@ public class BlackHolePathController : MonoBehaviour
 
     void Update()
     {
-        if (!_isRProcessed)
+        if (Managers.Gravity.CanFireBlackHole && !_isRProcessed)
             ProcessLMouse();
-        if (!_isLProcessed)
+        if (Managers.Gravity.CanFireWhiteHole && !_isLProcessed)
             ProcessRMouse();
         ProcessRetrieve();
     }

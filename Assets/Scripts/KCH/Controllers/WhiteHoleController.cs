@@ -82,7 +82,7 @@ public class WhiteHoleController : MonoBehaviour
         _isScaling = false;
         _scalingType = ScalingType.Shrink;
         _eventHorizon.localScale = Managers.Gravity.GravityStat.InitScale * Vector3.one;
-        SetActive(Managers.Gravity.BlackHole == null ? false : Managers.Gravity.IsBlackHoleEnabled);
+        SetActive(Managers.Gravity.BlackHole == null ? false : Managers.Gravity.IsBlackHoleActive);
     }
 
     public void SetActive(bool isActivated)
