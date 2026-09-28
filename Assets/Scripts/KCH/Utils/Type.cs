@@ -18,6 +18,7 @@ public enum SceneType
     Stage2,
     Stage3,
     Stage4,
+    Stage5,
     Stage1Test,
     Stage2Test,
     Stage3Test,
