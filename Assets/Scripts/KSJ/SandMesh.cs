@@ -81,6 +81,7 @@ public class SandMesh : MonoBehaviour
 
         GetComponentInChildren<MeshCollider>().sharedMesh = m_mesh;
         m_mesh.RecalculateNormals();
+        m_mesh.RecalculateTangents();
 
 
     }

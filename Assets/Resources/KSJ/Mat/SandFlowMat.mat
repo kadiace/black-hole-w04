@@ -51,7 +51,7 @@ Material:
     - _QueueOffset: 0
     - _Speed: 0.5
     - _Strength: 1
-    - _Tiling: 50
+    - _Tiling: 100
     m_Colors:
     - _Color: {r: 0.854902, g: 0.6470588, b: 0.1254902, a: 1}
   m_BuildTextureStacks: []
