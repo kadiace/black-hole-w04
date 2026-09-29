@@ -2082,8 +2082,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage3SceneContext
   _guideCanvas: {fileID: 15661606}
-  _currentStage: 3
-  _nextStage: 4
+  _currentStage: 4
+  _nextStage: 5
   _nextStageTrigger: {fileID: 1626524709}
   whiteholePos: {fileID: 93996969}
 --- !u!1 &1907526471

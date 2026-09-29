@@ -2223,8 +2223,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage3SceneContext
   _guideCanvas: {fileID: 1582214433}
-  _currentStage: 4
-  _nextStage: 5
+  _currentStage: 5
+  _nextStage: 6
   _nextStageTrigger: {fileID: 1136892693}
   _whiteHoleGun: {fileID: 1799892083}
   _whiteHoleGunCollider: {fileID: 1507043176}

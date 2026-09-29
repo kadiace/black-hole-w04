@@ -4872,8 +4872,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage2SceneContext
   _guideCanvas: {fileID: 15661606}
-  _currentStage: 2
-  _nextStage: 3
+  _currentStage: 3
+  _nextStage: 4
   _nextStageTrigger: {fileID: 1626524709}
   _blackHoleGun: {fileID: 3773840716985669220}
   _blackHoleGunCollider: {fileID: 3773840716985669221}
