@@ -11,6 +11,7 @@ public class TitleSceneContext : MonoBehaviour
 
     void Start()
     {
+        Time.timeScale = 1f;
         Managers.Gravity.CreateWhiteHole(_whiteHolePosition.position);
         StartCoroutine(CreateBlackHoleRoutine(_blackHolePosition.position));
 
@@ -28,4 +29,3 @@ public class TitleSceneContext : MonoBehaviour
         }
     }
 }
-
