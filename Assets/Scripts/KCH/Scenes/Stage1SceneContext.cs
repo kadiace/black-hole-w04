@@ -21,8 +21,8 @@ public class Stage1SceneContext : SceneContext
     {
         ShowGuide(INITIAL_GUIDE);
 
-        Managers.Gravity.CreateWhiteHole(new Vector3(-10, 5, -70));
-        StartCoroutine(CreateBlackHoleRoutine(new Vector3(0, 2, -40)));
+        Managers.Gravity.CreateWhiteHole(_whiteHolePosition.position);
+        StartCoroutine(CreateBlackHoleRoutine(_blackHolePosition.position));
 
         Managers.Gravity.CanFireBlackHole = false;
         Managers.Gravity.CanFireWhiteHole = false;
