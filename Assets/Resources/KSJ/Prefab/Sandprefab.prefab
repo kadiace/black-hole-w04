@@ -158,7 +158,8 @@ MonoBehaviour:
   zSize: 20
   spaceX: 0
   spaceY: 0
-  vertexSpacing: 0.25
+  vertexSpacing: 0.2
+  maxVerticesPerAxis: 128
 --- !u!54 &3882034830627240421
 Rigidbody:
   m_ObjectHideFlags: 0
