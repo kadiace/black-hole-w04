@@ -37,8 +37,4 @@ public class Stage1SceneContext : SceneContext
             yield return new WaitForSeconds(12f);
         }
     }
-
-    protected override SceneType GetCurrentStage() => SceneType.Stage1;
-
-    protected override SceneType GetNextStage() => SceneType.Stage2;
 }

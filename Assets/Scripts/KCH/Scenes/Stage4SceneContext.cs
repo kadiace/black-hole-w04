@@ -33,8 +33,4 @@ public class Stage4SceneContext : SceneContext
         _whiteHoleGun.SetActive(false);
         Managers.Gravity.CanFireWhiteHole = true;
     }
-
-    protected override SceneType GetCurrentStage() => SceneType.Stage4;
-
-    protected override SceneType GetNextStage() => SceneType.Stage5;
 }

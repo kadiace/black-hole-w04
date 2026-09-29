@@ -4815,7 +4815,7 @@ Transform:
   m_GameObject: {fileID: 1758563121}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 0, y: 1.5, z: 16.5}
+  m_LocalPosition: {x: 0, y: 1.5, z: 16.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4986,7 +4986,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage2SceneContext
   _guideCanvas: {fileID: 15661606}
-  _nextStage: {fileID: 1626524709}
+  _currentStage: 2
+  _nextStage: 3
+  _nextStageTrigger: {fileID: 1626524709}
   _blackHoleGun: {fileID: 3773840716985669220}
   _blackHoleGunCollider: {fileID: 3773840716985669221}
   _whiteHolePositionA: {fileID: 1941691138}
@@ -5899,7 +5901,7 @@ Transform:
   m_GameObject: {fileID: 2106400989}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 0, y: 1.5, z: 16.5}
+  m_LocalPosition: {x: 0, y: 1.5, z: 16.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

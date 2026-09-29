@@ -9,16 +9,26 @@ public abstract class SceneContext : MonoBehaviour
     [SerializeField]
     private GuideCanvas _guideCanvas;
 
-    [Header("Next Stage")]
+    [Header("Stage")]
     [SerializeField]
-    private TriggerChecker _nextStage;
+    private SceneType _currentStage;
+    [SerializeField]
+    private SceneType _nextStage;
+    [SerializeField]
+    private TriggerChecker _nextStageTrigger;
 
     protected virtual void Awake()
     {
         Managers.Input.SetInputMode(InputMode.Player);
-        _nextStage.OnTriggerEntered += OnNextStageEnter;
+        if (_nextStageTrigger != null && _nextStage != SceneType.Unknown)
+            _nextStageTrigger.OnTriggerEntered += OnNextStageEnter;
         OnInitialize();
         Managers.Input.PlayerMap.Restart.performed += RestartStage;
+    }
+
+    private void OnDestroy()
+    {
+        Managers.Input.PlayerMap.Restart.performed -= RestartStage;
     }
 
     protected abstract void OnInitialize();
@@ -34,7 +44,7 @@ public abstract class SceneContext : MonoBehaviour
     private void RestartStage(InputAction.CallbackContext context)
     {
         Managers.Clear();
-        SceneManager.LoadScene(GetCurrentStage().ToString());
+        SceneManager.LoadScene(_currentStage.ToString());
     }
 
     private void OnNextStageEnter(Collider other)
@@ -44,10 +54,6 @@ public abstract class SceneContext : MonoBehaviour
             return;
 
         Managers.Clear();
-        SceneManager.LoadScene(GetNextStage().ToString());
+        SceneManager.LoadScene(_nextStage.ToString());
     }
-
-    protected abstract SceneType GetCurrentStage();
-
-    protected abstract SceneType GetNextStage();
 }
