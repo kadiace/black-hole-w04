@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -34,6 +35,9 @@ public class BlackHoleController : MonoBehaviour
     public SphereCollider InnerCollider => _inner.GetComponent<SphereCollider>();
     public SphereCollider EventHorizonCollider => _eventHorizon.GetComponent<SphereCollider>();
     public bool IsFullyExpanded => isActiveAndEnabled && !_isScaling && !_isEliminating && _scalingType == ScalingType.Expand;
+
+    [Header("Teleport")]
+    private bool _isTeleporting;
 
     [Header("Gravity Affected")]
     private readonly HashSet<GravityController> _gravityObjects = new();
@@ -208,8 +212,6 @@ public class BlackHoleController : MonoBehaviour
 
         if (other.CompareTag("Sand"))
         {
-            //Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
-            //Debug.Log(other.GetComponent<SandMesh>());
             other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
             Managers.Gravity.WhiteHole.IsSand = true;
         }
@@ -225,7 +227,21 @@ public class BlackHoleController : MonoBehaviour
         if (rb == null || gravityController == null)
             return;
 
-        StartCoroutine(TeleportThroughWhiteHole(rb, gravityController));
+        PlayerController playerController = other.GetComponentInParent<PlayerController>();
+        if (playerController != null)
+        {
+            if (_isTeleporting)
+                return;
+            _isTeleporting = true;
+            StartCoroutine(TeleportThroughWhiteHole(rb, gravityController));
+        }
+        else
+        {
+            Vector3 blackHoleOffset = transform.position - rb.transform.position;
+
+            rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
+            gravityController.SetGravityCenter(this, null);
+        }
     }
 
     private void OuterExit(Collider other)
@@ -252,21 +268,43 @@ public class BlackHoleController : MonoBehaviour
 
     private IEnumerator TeleportThroughWhiteHole(Rigidbody rb, GravityController gravityController)
     {
+        CinemachineCamera cinemachineCamera =
+            Camera.main.GetComponent<CinemachineBrain>().ActiveVirtualCamera as CinemachineCamera;
+        Transform followTarget = cinemachineCamera.Follow;
+        cinemachineCamera.Follow = null;
+
         Managers.Gravity.WhiteHole.Distortion.intensity.value = 1f;
         Time.timeScale = 0f;
+
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(transform.position);
+        _distortion.center.value = new Vector2(screenPos.x / Screen.width, screenPos.y / Screen.height);
+        Managers.Gravity.WhiteHole.Distortion.center.value = new Vector2(screenPos.x / Screen.width, screenPos.y / Screen.height);
         yield return LerpDistortion(_distortion, 0f, 1f, 1f);
 
         Vector3 blackHoleOffset = transform.position - rb.transform.position;
-        rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
+        Vector3 targetPosition = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
+
+        rb.transform.position = targetPosition;
+        Physics.SyncTransforms();
+
+        cinemachineCamera.ForceCameraPosition(followTarget.position, followTarget.rotation);
+        cinemachineCamera.PreviousStateIsValid = false;
+
         gravityController.SetGravityCenter(this, null);
-        Time.timeScale = 0.01f;
-        yield return new WaitForSecondsRealtime(0.01f);
-        _distortion.intensity.value = 0f;
+
+        Time.timeScale = 0.2f;
+        yield return new WaitForSecondsRealtime(0.2f);
 
         Time.timeScale = 0f;
+
+        _distortion.intensity.value = 0f;
         yield return LerpDistortion(Managers.Gravity.WhiteHole.Distortion, 1f, 0f, 1f);
 
+        cinemachineCamera.Follow = followTarget;
+        cinemachineCamera.PreviousStateIsValid = false;
+
         Time.timeScale = 1f;
+        _isTeleporting = false;
     }
 
     private IEnumerator LerpDistortion(LensDistortion lensDistortion, float from, float to, float duration)
@@ -278,6 +316,7 @@ public class BlackHoleController : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
 
             float t = Mathf.Clamp01(elapsed / duration);
+            t = Mathf.SmoothStep(0f, 1f, t);
             lensDistortion.intensity.value = Mathf.Lerp(from, to, t);
 
             yield return null;
