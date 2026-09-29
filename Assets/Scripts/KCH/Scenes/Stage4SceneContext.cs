@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Stage4SceneContext : SceneContext
 {
@@ -37,4 +38,10 @@ public class Stage4SceneContext : SceneContext
     protected override SceneType GetCurrentStage() => SceneType.Stage4;
 
     protected override SceneType GetNextStage() => SceneType.Stage5;
+
+    public void RestartAfterDrowning()
+    {
+        Managers.Clear();
+        SceneManager.LoadScene(SceneType.Stage4.ToString());
+    }
 }
