@@ -111,6 +111,7 @@ public class SandMesh : MonoBehaviour
         }
         m_mesh.RecalculateNormals();
         m_mesh.RecalculateTangents();
+        m_mesh.RecalculateBounds();
 
         m_pendingChange = 0f;
         ShapeVersion++;
