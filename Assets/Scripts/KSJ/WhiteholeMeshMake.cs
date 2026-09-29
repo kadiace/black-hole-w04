@@ -38,6 +38,8 @@ public class WhiteholeMeshMake : MonoBehaviour
         m_mesh.uv = uvs;
 
         m_mesh.RecalculateBounds();
+        m_mesh.RecalculateNormals();
+        m_mesh.RecalculateTangents();
     }
 
     private void OnDrawGizmosSelected()

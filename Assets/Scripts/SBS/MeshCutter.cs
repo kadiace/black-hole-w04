@@ -1,9 +1,6 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.ProBuilder.Csg;
-using UnityEngine.Rendering;
-using static UnityEditor.Progress;
 
 public class TriData
 {
@@ -110,7 +107,7 @@ public class MeshCutter : MonoBehaviour
         var triangleList = new List<int>(triangles);
 
 
-        for (int i =  delList.Count - 1; i > 0; i--)
+        for (int i = delList.Count - 1; i > 0; i--)
         {
             var dvert = delList[i];
 
@@ -211,7 +208,7 @@ public class MeshCutter : MonoBehaviour
 
         // 결과는 월드 좌표 → 원본 로컬 좌표로 되돌려서 원본과 같은 트랜스폼에 얹는다
         // (outMesh 가 null = 통째로 먹힘)
-        if (outMesh != null) 
+        if (outMesh != null)
             WorldToLocal(outMesh, _target.transform);
         WorldToLocal(inMesh, _target.transform);
 
@@ -224,9 +221,9 @@ public class MeshCutter : MonoBehaviour
             _outside = CreateCsgPiece(_target, outMesh, outMats, "_Out", total > 0f ? outVol / total : 0.5f);
         _inside = CreateCsgPiece(_target, inMesh, inMats, "_In", total > 0f ? inVol / total : 0.5f);
 
-        if 
+        if
             (Application.isPlaying) Destroy(_target);
-        else 
+        else
             DestroyImmediate(_target);
 
         return true;
@@ -347,7 +344,7 @@ public class MeshCutter : MonoBehaviour
         _mesh.vertices = vertices;
         if (normals.Length == vertices.Length)
             _mesh.normals = normals;
-        else 
+        else
             _mesh.RecalculateNormals();
         if (_mesh.tangents.Length == vertices.Length)
             _mesh.RecalculateTangents();

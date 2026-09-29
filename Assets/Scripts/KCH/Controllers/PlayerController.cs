@@ -46,6 +46,9 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
     [Header("Ground")]
     [SerializeField]
     private LayerMask _groundLayer;
+
+    [SerializeField]
+    private LayerMask _sandLayer;
     [SerializeField]
     private float _groundCheckDistance = 0.1f;
     [SerializeField, Range(0f, 90f)]
@@ -186,7 +189,13 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             QueryTriggerInteraction.Ignore))
         {
             _isGrounded = true;
-            _groundNormal = hit.normal;
+
+            if ((_sandLayer.value & (1 << hit.collider.gameObject.layer)) != 0)
+                _groundNormal = Vector3.up;
+            else
+                _groundNormal = hit.normal;
+
+
             _coyoteTimer = _coyoteTime;
             SwitchFreezeRotation(true);
         }
@@ -204,6 +213,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
             _coyoteTimer = Mathf.Max(0f, _coyoteTimer - Time.fixedDeltaTime);
             SwitchFreezeRotation(false);
         }
+
 
         _hasGroundContact = false;
     }
@@ -254,6 +264,13 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
     {
         if ((_groundLayer.value & (1 << collision.gameObject.layer)) == 0)
             return;
+
+        if ((_sandLayer.value & (1 << collision.gameObject.layer)) != 0)
+        {
+            _hasGroundContact = true;
+            _contactGroundNormal = Vector3.up;
+            return;
+        }
 
         float bestGroundDot = Mathf.Cos(_maxGroundAngle * Mathf.Deg2Rad);
         Vector3 bestGroundNormal = Vector3.zero;

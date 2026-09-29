@@ -110,6 +110,7 @@ public class SandMesh : MonoBehaviour
             m_meshCollider.sharedMesh = m_mesh;
         }
         m_mesh.RecalculateNormals();
+        m_mesh.RecalculateTangents();
 
         m_pendingChange = 0f;
         ShapeVersion++;

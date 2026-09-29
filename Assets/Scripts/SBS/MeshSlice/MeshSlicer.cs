@@ -448,6 +448,12 @@ public static partial class MeshSlicer
         go.transform.SetLocalPositionAndRotation(st.localPosition, st.localRotation);
         go.transform.localScale = st.localScale;
 
+        // 피벗을 조각 중심으로 옮긴다.
+        // 조각 메시는 원본 로컬 좌표라 피벗이 원본 중심(예: 벽 중심)에 남는데,
+        // 그러면 transform.position 을 쓰는 코드(중력 방향, 텔레포트, 거리 판정 등)가 조각 위치를 잘못 알게 된다.
+        // 정점을 -c 만큼, 트랜스폼을 +c 만큼 옮기므로 보이는 모습은 그대로다.
+        RecenterPivot(go.transform, st, mesh);
+
         // 메시 & 렌더러 (머터리얼은 원본 sharedMaterials 그대로 사용)
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         var srcRenderer = src.GetComponent<MeshRenderer>();
@@ -531,6 +537,28 @@ public static partial class MeshSlicer
             Undo.RegisterCreatedObjectUndo(go, "Mesh Slice");
 #endif
         return go;
+    }
+
+    /// <summary>
+    /// 조각 메시의 중심(bounds.center)이 로컬 원점이 되도록 정점을 옮기고, 그만큼 트랜스폼 위치를 옮긴다.
+    /// 새로 만드는 조각에만 쓴다 (원본 유지 시 원본에 적용하는 메시에 쓰면 원본 위치가 바뀐다).
+    /// </summary>
+    /// <param name="piece">조각 트랜스폼 (원본과 같은 부모/로컬 위치/회전/스케일로 설정된 상태)</param>
+    /// <param name="source">원본 트랜스폼 (메시 정점이 이 좌표계 기준)</param>
+    static void RecenterPivot(Transform piece, Transform source, Mesh mesh)
+    {
+        Vector3 center = mesh.bounds.center;
+        if (center.sqrMagnitude < 1e-12f)
+            return;
+
+        var vertices = mesh.vertices;
+        for (int i = 0; i < vertices.Length; i++)
+            vertices[i] -= center;
+        mesh.vertices = vertices;
+        mesh.RecalculateBounds();
+
+        // 원본 좌표계에서의 중심을 월드로 → 조각의 새 피벗
+        piece.position = source.TransformPoint(center);
     }
 
     /// <summary>
