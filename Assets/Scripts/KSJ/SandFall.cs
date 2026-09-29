@@ -35,6 +35,8 @@ public class SandFall : MonoBehaviour
         bool foundSand = false;
         RaycastHit sandHit = default;
         SandMesh hitSand = null;
+
+        //모래 스케일 조정
         float tempScale = Managers.Gravity.savedSand / 1000f;
         tempScale = Mathf.Max(tempScale, 0.1f);
         transform.localScale = new Vector3(tempScale, transform.localScale.y, tempScale);
@@ -60,10 +62,10 @@ public class SandFall : MonoBehaviour
             m_currentSand = hitSand.gameObject;
             if (!hitSand.SandUp(sandHit))
             {
-                gameObject.SetActive(false);
+                //gameObject.SetActive(false);
             }
 
-            //StretchToPoint(sandHit.point);
+
             return;
         }
 
@@ -90,11 +92,11 @@ public class SandFall : MonoBehaviour
 
         if (!newSand.SandUp(groundHit))
         {
-            gameObject.SetActive(false);
+            //gameObject.SetActive(false);
         }
 
 
-        //StretchToPoint(groundHit.point);
+
 
     }
 
