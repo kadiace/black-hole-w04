@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class Stage3SceneContext : SceneContext
 {
+    [SerializeField]
+    private Transform whiteholePos;
 
     protected override void OnInitialize()
     {
@@ -9,7 +11,7 @@ public class Stage3SceneContext : SceneContext
         Managers.Gravity.CanFireWhiteHole = false;
 
 
-        Managers.Gravity.CreateWhiteHole(new Vector3(-3f, 7.5f, -10));
+        Managers.Gravity.CreateWhiteHole(whiteholePos.position);
     }
 
     protected override SceneType GetCurrentStage() => SceneType.Stage3;

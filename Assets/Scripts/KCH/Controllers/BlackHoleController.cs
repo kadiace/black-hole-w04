@@ -31,7 +31,7 @@ public class BlackHoleController : MonoBehaviour
 
     void Awake()
     {
-        cutter = _inner.GetComponent<WallCutter>();
+        cutter = _eventHorizon.GetComponent<WallCutter>();
 
         _processEliminate = false;
         _isEliminating = false;
@@ -152,7 +152,7 @@ public class BlackHoleController : MonoBehaviour
             SetActive(false);
     }
 
-    private void Eliminate()
+    public void Eliminate()
     {
         gameObject.SetActive(false);
         Managers.Gravity.WhiteHole.SetActive(false);

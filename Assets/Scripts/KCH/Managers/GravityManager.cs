@@ -31,9 +31,8 @@ public class GravityManager
 
     public void Clear()
     {
-        BlackHole.SetActive(false);
-        BlackHole.gameObject.SetActive(false);
-        RetrieveWhiteHole();
+        BlackHole.Eliminate();
+        WhiteHole.Eliminate();
     }
 
     public void CreateBlackHole(Vector3 position)
