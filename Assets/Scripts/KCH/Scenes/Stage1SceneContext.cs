@@ -11,6 +11,11 @@ public class Stage1SceneContext : SceneContext
 {Interact}: 상호작용
 {Restart}: 재시작
 {Pause}: 메뉴";
+    [Header("Hole Position")]
+    [SerializeField]
+    private Transform _blackHolePosition;
+    [SerializeField]
+    private Transform _whiteHolePosition;
 
     protected override void OnInitialize()
     {
