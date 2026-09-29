@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BlackHoleController : MonoBehaviour
@@ -11,6 +12,7 @@ public class BlackHoleController : MonoBehaviour
     private TriggerChecker _eventHorizon;
     [SerializeField]
     private ParticleSystem _convergence;
+    private WallCutter cutter;
 
     [Header("Activate")]
     private bool _processEliminate;
@@ -27,7 +29,10 @@ public class BlackHoleController : MonoBehaviour
     public SphereCollider EventHorizonCollider => _eventHorizon.GetComponent<SphereCollider>();
     public bool IsFullyExpanded => isActiveAndEnabled && !_isScaling && !_isEliminating && _scalingType == ScalingType.Expand;
 
-    private WallCutter cutter;
+    [Header("")]
+    private readonly HashSet<GravityController> _gravityObjects = new();
+    private PlayerController _playerController;
+
 
     void Awake()
     {
@@ -117,6 +122,19 @@ public class BlackHoleController : MonoBehaviour
         SetActive(Managers.Gravity.WhiteHole != null && Managers.Gravity.IsWhiteHoleActive);
     }
 
+    void OnDisable()
+    {
+        foreach (GravityController gravityController in _gravityObjects)
+            gravityController.SetGravityCenter(this, null);
+        _gravityObjects.Clear();
+
+        if (_playerController != null)
+        {
+            _playerController.OnGravity = false;
+            _playerController = null;
+        }
+    }
+
     public void SetActive(bool isActivated)
     {
         if (_processEliminate)
@@ -167,12 +185,14 @@ public class BlackHoleController : MonoBehaviour
         GravityController gravityController = other.GetComponentInParent<GravityController>();
         if (gravityController == null)
             return;
+        gravityController.SetGravityCenter(this, transform.position);
+        _gravityObjects.Add(gravityController);
 
         PlayerController playerController = other.GetComponentInParent<PlayerController>();
-        if (playerController != null)
-            playerController.OnGravity = true;
-
-        gravityController.SetGravityCenter(this, transform.position);
+        if (playerController == null)
+            return;
+        playerController.OnGravity = true;
+        _playerController = playerController;
     }
 
     private void InnerEnter(Collider other)
@@ -180,11 +200,6 @@ public class BlackHoleController : MonoBehaviour
         if (!Managers.Gravity.IsWhiteHoleActive || _isScaling)
             return;
 
-        // 1. Rotate Player up to -GravityDir
-
-        // 2. Cut Rigid Body object
-
-        // 3. Affect Sand
         if (other.CompareTag("Sand"))
         {
             //Debug.Log(GetComponentsInChildren<SphereCollider>()[1]);
@@ -192,9 +207,6 @@ public class BlackHoleController : MonoBehaviour
             other.GetComponent<SandMesh>().flowTrigger = GetComponentsInChildren<SphereCollider>()[1];
             Managers.Gravity.WhiteHole.IsSand = true;
         }
-
-        // 4. Affect fluid
-
     }
 
     private void EventHorizonEnter(Collider other)
@@ -211,8 +223,6 @@ public class BlackHoleController : MonoBehaviour
 
         rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
         gravityController.SetGravityCenter(this, null);
-
-
     }
 
     private void OuterExit(Collider other)
@@ -220,8 +230,14 @@ public class BlackHoleController : MonoBehaviour
         GravityController gravityController = other.GetComponentInParent<GravityController>();
         if (gravityController == null)
             return;
-
         gravityController.SetGravityCenter(this, null);
+        _gravityObjects.Remove(gravityController);
+
+        PlayerController playerController = other.GetComponentInParent<PlayerController>();
+        if (playerController == null)
+            return;
+        playerController.OnGravity = false;
+        _playerController = null;
     }
 
     private void InnerExit(Collider other)
