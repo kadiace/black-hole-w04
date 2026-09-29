@@ -5041,14 +5041,14 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5700586163748264983}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f11b5091719a629419176eb32665d4e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DistortionController
   _maxDistortion: 1
+  _slowdownAmount: 0.7
   _endRadiusReference: {fileID: 8731766139792332749}
-  _playerController: {fileID: 0}
 --- !u!1 &8175516881334673423
 GameObject:
   m_ObjectHideFlags: 0
@@ -5102,6 +5102,7 @@ MonoBehaviour:
   _inner: {fileID: 2714715765434294354}
   _eventHorizon: {fileID: 7467340482293468}
   _convergence: {fileID: 2961545901775811512}
+  _volume: {fileID: 1082359017915881012}
 --- !u!1 &8573554814364048347
 GameObject:
   m_ObjectHideFlags: 0

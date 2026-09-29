@@ -8,7 +8,8 @@ public class DistortionController : MonoBehaviour
 {
     [SerializeField, Range(0f, 1f)]
     private float _maxDistortion = 1f;
-
+    [SerializeField]
+    private float _slowdownAmount = 0.9f;
     [SerializeField]
     private Transform _endRadiusReference;
 
@@ -36,9 +37,8 @@ public class DistortionController : MonoBehaviour
         float t = Mathf.Clamp01((distance - _radiusMin) / (_radius - _radiusMin));
         float strength = 1f - t;
 
-        Debug.Log($"distance: {distance} " + $"_radius: {_radius} " + $"_radiusMin: {_radiusMin} " + $"t: {t} " + $"value: {strength * _maxDistortion}");
-
         _distortion.intensity.value = strength * _maxDistortion;
+        Time.timeScale = 1f - _slowdownAmount * strength;
     }
 
     void OnTriggerEnter(Collider other)
