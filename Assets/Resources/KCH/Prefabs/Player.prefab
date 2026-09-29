@@ -137,15 +137,15 @@ MonoBehaviour:
   _jumpGroundedCheckLockTime: 0.15
   _groundLayer:
     serializedVersion: 2
-    m_Bits: 1344
+    m_Bits: 320
   _sandLayer:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 0
   _groundCheckDistance: 0.01
   _maxGroundAngle: 50
   interactDistance: 5
   snapAt: {fileID: 2070170310352083180}
-  crosshair: {fileID: 7392306047330481023}
+  crosshair: {fileID: 0}
   _collider: {fileID: 7762167184305486458}
 --- !u!1 &1827855124436953356
 GameObject:
@@ -547,7 +547,7 @@ Transform:
   m_GameObject: {fileID: 6334811566637467080}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: 0.5}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
