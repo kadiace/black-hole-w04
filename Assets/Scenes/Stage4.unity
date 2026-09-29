@@ -2501,6 +2501,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   staticObstacles: []
+  sandObstacleRefreshInterval: 0.1
+  maxSandTileRebuildsPerStep: 16
   drawGridBounds: 1
   drawFluidCells: 0
 --- !u!4 &1187326089
@@ -4571,19 +4573,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 237580262488886468, guid: 76fdd410efd7052478c9d13b43a4bba5, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2367318311682775040, guid: 76fdd410efd7052478c9d13b43a4bba5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2367318311682775040, guid: 76fdd410efd7052478c9d13b43a4bba5, type: 3}
-      propertyPath: m_LocalPosition.y
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 2367318311682775040, guid: 76fdd410efd7052478c9d13b43a4bba5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 2367318311682775040, guid: 76fdd410efd7052478c9d13b43a4bba5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -25
       objectReference: {fileID: 0}
     - target: {fileID: 2367318311682775040, guid: 76fdd410efd7052478c9d13b43a4bba5, type: 3}
       propertyPath: m_LocalRotation.w
