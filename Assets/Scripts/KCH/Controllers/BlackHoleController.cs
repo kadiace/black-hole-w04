@@ -268,6 +268,8 @@ public class BlackHoleController : MonoBehaviour
 
     private IEnumerator TeleportThroughWhiteHole(Rigidbody rb, GravityController gravityController)
     {
+        bool canFireBlackHole = Managers.Gravity.CanFireBlackHole;
+        bool canFireWhiteHole = Managers.Gravity.CanFireWhiteHole;
         Managers.Gravity.CanFireBlackHole = false;
         Managers.Gravity.CanFireWhiteHole = false;
         CinemachineCamera cinemachineCamera =
@@ -308,8 +310,8 @@ public class BlackHoleController : MonoBehaviour
         Time.timeScale = 1f;
         _isTeleporting = false;
 
-        Managers.Gravity.CanFireBlackHole = true;
-        Managers.Gravity.CanFireWhiteHole = true;
+        Managers.Gravity.CanFireBlackHole = canFireBlackHole;
+        Managers.Gravity.CanFireWhiteHole = canFireWhiteHole;
     }
 
     private IEnumerator LerpDistortion(LensDistortion lensDistortion, float from, float to, float duration)
