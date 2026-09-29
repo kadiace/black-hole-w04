@@ -25,12 +25,12 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - Vector1_0bb6c794ceb5476bbe1601bd36eb7262: 4
-    - Vector1_486f1fcc37a949ffb726a117eab0987a: 4
-    - Vector1_e1206881e1244ef4a008548fa38caa6a: 1
-    - _ScreenSpaceScale: 2
-    - _SpherePercentage: 0.25
+    - Vector1_0bb6c794ceb5476bbe1601bd36eb7262: 1
+    - Vector1_486f1fcc37a949ffb726a117eab0987a: 12.02
+    - Vector1_e1206881e1244ef4a008548fa38caa6a: 1.19
+    - _ScreenSpaceScale: 1
+    - _SpherePercentage: 0.2
     m_Colors:
-    - Color_f649559c5a534a89a4820a4d0c46d676: {r: 1, g: 1, b: 1, a: 0}
+    - Color_f649559c5a534a89a4820a4d0c46d676: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
