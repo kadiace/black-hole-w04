@@ -106,7 +106,7 @@ public static partial class MeshSlicer
         }
 
         // 바깥 조각: 원본 유지 옵션이면 가장 큰 덩어리를 원본에 적용
-        bool kept = EmitOutside(target, outMeshes, Ratio, "_Out", cutterBounds.center, options, outside);
+        bool kept = EmitOutside(target, outMeshes, Ratio, "", cutterBounds.center, options, outside);
 
         if (!kept && options.destroyOriginal)
             DestroyObject(target);
