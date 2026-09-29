@@ -61,7 +61,7 @@ MonoBehaviour:
   flowTrigger: {fileID: 0}
   lowerSpeed: 100
   minimumHeight: -5
-  flowRate: 3
+  flowRate: 10
   loseSand: 0
 --- !u!114 &1562034880719278991
 MonoBehaviour:

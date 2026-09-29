@@ -111,6 +111,7 @@ public class SandMesh : MonoBehaviour
         }
         m_mesh.RecalculateNormals();
         m_mesh.RecalculateTangents();
+        m_mesh.RecalculateBounds();
 
         m_pendingChange = 0f;
         ShapeVersion++;
@@ -445,7 +446,7 @@ public class SandMesh : MonoBehaviour
         float excess = Mathf.Abs(distance) - allowedHeightDifference;
         float amount = excess * _deltatime;
 
-        amount = Mathf.Min(amount * flowRate, excess / 8);
+        amount = Mathf.Min(amount * flowRate, excess / 4);
         if (excess > 0)
         {
             if (distance < 0)
