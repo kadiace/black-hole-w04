@@ -1,5 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class BlackHoleController : MonoBehaviour
 {
@@ -12,6 +15,9 @@ public class BlackHoleController : MonoBehaviour
     private TriggerChecker _eventHorizon;
     [SerializeField]
     private ParticleSystem _convergence;
+    [SerializeField]
+    private Volume _volume;
+    private LensDistortion _distortion;
     private WallCutter cutter;
 
     [Header("Activate")]
@@ -29,14 +35,14 @@ public class BlackHoleController : MonoBehaviour
     public SphereCollider EventHorizonCollider => _eventHorizon.GetComponent<SphereCollider>();
     public bool IsFullyExpanded => isActiveAndEnabled && !_isScaling && !_isEliminating && _scalingType == ScalingType.Expand;
 
-    [Header("")]
+    [Header("Gravity Affected")]
     private readonly HashSet<GravityController> _gravityObjects = new();
     private PlayerController _playerController;
-
 
     void Awake()
     {
         cutter = _eventHorizon.GetComponent<WallCutter>();
+        _volume.profile.TryGet(out _distortion);
 
         _processEliminate = false;
         _isEliminating = false;
@@ -219,10 +225,7 @@ public class BlackHoleController : MonoBehaviour
         if (rb == null || gravityController == null)
             return;
 
-        Vector3 blackHoleOffset = transform.position - rb.transform.position;
-
-        rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
-        gravityController.SetGravityCenter(this, null);
+        StartCoroutine(TeleportThroughWhiteHole(rb, gravityController));
     }
 
     private void OuterExit(Collider other)
@@ -245,5 +248,41 @@ public class BlackHoleController : MonoBehaviour
         PlayerController playerController = other.GetComponentInParent<PlayerController>();
         if (playerController != null)
             playerController.OnGravity = false;
+    }
+
+    private IEnumerator TeleportThroughWhiteHole(Rigidbody rb, GravityController gravityController)
+    {
+        Managers.Gravity.WhiteHole.Distortion.intensity.value = 1f;
+        Time.timeScale = 0f;
+        yield return LerpDistortion(_distortion, 0f, 1f, 1f);
+
+        Vector3 blackHoleOffset = transform.position - rb.transform.position;
+        rb.position = Managers.Gravity.WhiteHole.transform.position + blackHoleOffset;
+        gravityController.SetGravityCenter(this, null);
+        Time.timeScale = 0.01f;
+        yield return new WaitForSecondsRealtime(0.01f);
+        _distortion.intensity.value = 0f;
+
+        Time.timeScale = 0f;
+        yield return LerpDistortion(Managers.Gravity.WhiteHole.Distortion, 1f, 0f, 1f);
+
+        Time.timeScale = 1f;
+    }
+
+    private IEnumerator LerpDistortion(LensDistortion lensDistortion, float from, float to, float duration)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+
+            float t = Mathf.Clamp01(elapsed / duration);
+            lensDistortion.intensity.value = Mathf.Lerp(from, to, t);
+
+            yield return null;
+        }
+
+        lensDistortion.intensity.value = to;
     }
 }

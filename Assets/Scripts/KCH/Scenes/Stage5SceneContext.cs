@@ -35,10 +35,6 @@ public class Stage5SceneContext : SceneContext
         Managers.Gravity.CanFireWhiteHole = true;
     }
 
-    protected override SceneType GetCurrentStage() => SceneType.Stage4;
-
-    protected override SceneType GetNextStage() => SceneType.Stage5;
-
     public void RestartAfterDrowning()
     {
         Managers.Clear();

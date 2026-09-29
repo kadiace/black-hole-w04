@@ -14,6 +14,7 @@ public enum ScalingType
 
 public enum SceneType
 {
+    Unknown,
     Stage1,
     Stage2,
     Stage3,

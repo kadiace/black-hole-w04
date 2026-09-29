@@ -55,8 +55,4 @@ public class Stage2SceneContext : SceneContext
     {
         Managers.Gravity.CreateWhiteHole(_whiteHolePositionB.position);
     }
-
-    protected override SceneType GetCurrentStage() => SceneType.Stage2;
-
-    protected override SceneType GetNextStage() => SceneType.Stage3;
 }

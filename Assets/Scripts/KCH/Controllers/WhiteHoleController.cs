@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class WhiteHoleController : MonoBehaviour
 {
@@ -7,6 +9,9 @@ public class WhiteHoleController : MonoBehaviour
     private Transform _eventHorizon;
     [SerializeField]
     private ParticleSystem _emission;
+    [SerializeField]
+    private Volume _volume;
+    public LensDistortion Distortion { get; set; }
 
     [Header("Renderer")]
     [SerializeField]
@@ -44,6 +49,9 @@ public class WhiteHoleController : MonoBehaviour
 
     void Awake()
     {
+        _volume.profile.TryGet(out LensDistortion distortion);
+        Distortion = distortion;
+
         _processEliminate = false;
         _isEliminating = false;
         _isScaling = false;
