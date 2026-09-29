@@ -218,23 +218,18 @@ PrefabInstance:
   m_SourcePrefab: {fileID: 100100000, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
 --- !u!114 &15661606 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7185344025104889915, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
+  m_CorrespondingSourceObject: {fileID: -4602587650964510666, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
   m_PrefabInstance: {fileID: 15661605}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Script: {fileID: 11500000, guid: 35455eefb1de93a44809eef6d940e706, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
+  m_EditorClassIdentifier: Assembly-CSharp::GuideCanvas
 --- !u!224 &15661607 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6844568154633177126, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-  m_PrefabInstance: {fileID: 15661605}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &15661610 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6199676943508247232, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
   m_PrefabInstance: {fileID: 15661605}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &131414838
@@ -696,6 +691,14 @@ PrefabInstance:
     - target: {fileID: 613941893457555775, guid: fa3cd9768595868479ea8f0c1d21aa49, type: 3}
       propertyPath: crosshair
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 613941893457555775, guid: fa3cd9768595868479ea8f0c1d21aa49, type: 3}
+      propertyPath: _sandLayer.m_Bits
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 613941893457555775, guid: fa3cd9768595868479ea8f0c1d21aa49, type: 3}
+      propertyPath: _groundLayer.m_Bits
+      value: 320
       objectReference: {fileID: 0}
     - target: {fileID: 1133919625951496929, guid: fa3cd9768595868479ea8f0c1d21aa49, type: 3}
       propertyPath: m_Name
@@ -4916,8 +4919,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b0e62b46cd63084ebacf1b244cc33e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage2SceneContext
-  _guideCanvas: {fileID: 15661610}
-  _text: {fileID: 15661606}
+  _guideCanvas: {fileID: 15661606}
   _nextStage: {fileID: 1626524709}
   _blackHoleGun: {fileID: 3773840716985669220}
   _blackHoleGunCollider: {fileID: 3773840716985669221}
