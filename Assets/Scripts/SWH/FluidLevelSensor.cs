@@ -7,6 +7,7 @@ public sealed class FluidLevelSensor : MonoBehaviour
     [Header("연결")]
     [SerializeField] private FluidSimulation fluidSimulation;
     [SerializeField] private ComputeShader sensorShader;
+    [SerializeField] private LogicBase logicTarget;
 
     [Header("감지 영역")]
     [SerializeField, Min(0.01f)] private float radius = 1f;
@@ -74,6 +75,7 @@ public sealed class FluidLevelSensor : MonoBehaviour
         fluidSimulation.SimulationStopped += HandleSimulationStopped;
 
         Debug.Log("유체 수위: OFF", this);
+        logicTarget?.SetActive(IsFilled);
     }
 
     // 입자 집계
@@ -176,6 +178,8 @@ public sealed class FluidLevelSensor : MonoBehaviour
         }
 
         IsFilled = filled;
+
+        logicTarget?.SetActive(IsFilled);
         Debug.Log(filled ? "유체 수위: ON" : "유체 수위: OFF", this);
     }
 
