@@ -39,6 +39,7 @@ public class SandMesh : MonoBehaviour
 
     [SerializeField] private float flowRate = 1;
 
+
     float[] heightChange;
 
     public bool loseSand = false;
@@ -188,15 +189,18 @@ public class SandMesh : MonoBehaviour
 
     //}
 
-    public void SandUp(RaycastHit hit)
+    public bool SandUp(RaycastHit hit)
     {
 
         float amountToPour = Managers.Gravity.savedSand;
-        if (Managers.Gravity.savedSand <= 0)
-            return;
+        if (Managers.Gravity.savedSand <= 50)
+        {
+            Managers.Gravity.savedSand = 0;
+            return false;
+        }
         if (m_modifiedVerts == null || GetComponentInChildren<MeshFilter>() == null)
             Start();
-
+        Debug.Log(Managers.Gravity.savedSand);
         Vector3 hitLocal = GetComponentInChildren<MeshFilter>().transform.InverseTransformPoint(hit.point);
         float radiusSqr = radius * radius;
         float totalWeight = 0;
@@ -234,6 +238,8 @@ public class SandMesh : MonoBehaviour
         Managers.Gravity.savedSand = 0;
 
         RecalculateMesh();
+
+        return true;
     }
 
     void SandRelaxation(float _deltatime)
@@ -383,7 +389,7 @@ public class SandMesh : MonoBehaviour
 
             }
         }
-        storedSandAmount /= 10;
+        storedSandAmount /= 5;
         Managers.Gravity.savedSand += storedSandAmount;
     }
 

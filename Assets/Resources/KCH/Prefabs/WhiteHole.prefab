@@ -5129,31 +5129,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4033358166160268350, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.38128
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.38128
+      value: 25.962809
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.38128
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.000000050951
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.798
+      value: -26.14
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.000000065431
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5181,6 +5181,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8857889734229467494, guid: 8d934e561def1834093c0237d4812973, type: 3}
+      propertyPath: m_ConstrainProportionsScale
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

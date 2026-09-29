@@ -46,7 +46,7 @@ public class Stage2SceneContext : SceneContext
 
     private void OnWhiteHoleMoveEnter(Collider other)
     {
-        Managers.Gravity.CreateWhiteHole(new Vector3(5, 6, -80));
+        Managers.Gravity.CreateWhiteHole(new Vector3(5, 0.7f, -80));
     }
 
     protected override SceneType GetCurrentStage() => SceneType.Stage2;
