@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public abstract class SceneContext : MonoBehaviour
 {
@@ -13,7 +12,7 @@ public abstract class SceneContext : MonoBehaviour
     [SerializeField]
     protected SceneType _currentStage;
     [SerializeField]
-    private SceneType _nextStage;
+    protected SceneType _nextStage;
     [SerializeField]
     private TriggerChecker _nextStageTrigger;
 

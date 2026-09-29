@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -10,14 +12,10 @@ public class GuideCanvas : MonoBehaviour
     [SerializeField]
     private Button _button;
 
+    private List<Action<InputAction.CallbackContext>> _confirmActions = new();
+
     public string Text { private get; set; }
-
-    private InputAction _confirmAction;
-
-    void Awake()
-    {
-        _confirmAction = Managers.Input.UIMap.Confirm;
-    }
+    public Button Button => _button;
 
     void Update()
     {
@@ -26,12 +24,15 @@ public class GuideCanvas : MonoBehaviour
 
     void OnEnable()
     {
-        _confirmAction.performed += OnConfirmAction;
+        Managers.Input.UIMap.Confirm.performed += OnConfirmAction;
     }
 
     void OnDisable()
     {
-        _confirmAction.performed -= OnConfirmAction;
+        Managers.Input.UIMap.Confirm.performed -= OnConfirmAction;
+        foreach (Action<InputAction.CallbackContext> action in _confirmActions)
+            Managers.Input.UIMap.Confirm.performed -= action;
+        _confirmActions.Clear();
     }
 
     public void OnButtonClicked()
@@ -53,5 +54,11 @@ public class GuideCanvas : MonoBehaviour
         if (!button.interactable)
             return;
         button.onClick.Invoke();
+    }
+
+    public void RegisterConfirmAction(Action<InputAction.CallbackContext> action)
+    {
+        Managers.Input.UIMap.Confirm.performed += action;
+        _confirmActions.Add(action);
     }
 }

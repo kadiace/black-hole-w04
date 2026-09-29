@@ -2309,7 +2309,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage5SceneContext
   _guideCanvas: {fileID: 1180186944}
-  _currentStage: 5
+  _currentStage: 6
   _nextStage: 1
   _nextStageTrigger: {fileID: 11284547}
 --- !u!4 &593752704

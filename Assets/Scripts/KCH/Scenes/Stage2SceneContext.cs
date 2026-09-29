@@ -6,7 +6,8 @@ public class Stage2SceneContext : SceneContext
 블랙홀은 생성 후 {ExistDuration}초 동안 유지된 후 사라집니다.
 블랙홀이 생성되어있더라도 다른 위치에 즉시 새로 생성할 수 있습니다.
 
-{BlackHole}: 블랙홀 생성";
+{BlackHole}: 블랙홀 생성
+입력을 유지하는 중에는 블랙홀을 더 멀리 내보낼 수 있습니다.";
 
     [Header("Black Hole Gun")]
     [SerializeField]

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -9,7 +8,7 @@ public class Stage5SceneContext : SceneContext
     
     준비한 모든 스테이지를 훌륭히 완수하셨습니다!";
 
-    private Action<InputAction.CallbackContext> _confirmHandler;
+    private bool _isNextStageEntering;
 
     protected override void OnInitialize()
     {
@@ -19,20 +18,47 @@ public class Stage5SceneContext : SceneContext
 
     protected override void OnDestroy()
     {
+        Managers.Input.UIMap.Confirm.performed -= OnConfirmNextStage;
+
         base.OnDestroy();
-        Managers.Input.UIMap.Confirm.performed -= _confirmHandler;
     }
 
     protected override void OnNextStageEnter(Collider other)
     {
+        if (_isNextStageEntering)
+            return;
+
+        PlayerController player = other.GetComponentInParent<PlayerController>();
+        if (player == null)
+            return;
+
+        _isNextStageEntering = true;
+
+        Managers.Input.UIMap.Confirm.performed += OnConfirmNextStage;
+        _guideCanvas.Button.onClick.AddListener(OnClickNextStage);
+
         ShowGuide(CLEAR_GUIDE);
-        _confirmHandler = context => base.OnNextStageEnter(other);
-        Managers.Input.UIMap.Confirm.performed += _confirmHandler;
     }
 
     public void RestartAfterDrowning()
     {
         Managers.Clear();
         SceneManager.LoadScene(_currentStage.ToString());
+    }
+
+    private void OnConfirmNextStage(InputAction.CallbackContext context)
+    {
+        Managers.Input.UIMap.Confirm.performed -= OnConfirmNextStage;
+
+        Managers.Clear();
+        SceneManager.LoadScene(_nextStage.ToString());
+    }
+
+    private void OnClickNextStage()
+    {
+        _guideCanvas.Button.onClick.RemoveListener(OnClickNextStage);
+
+        Managers.Clear();
+        SceneManager.LoadScene(_nextStage.ToString());
     }
 }
