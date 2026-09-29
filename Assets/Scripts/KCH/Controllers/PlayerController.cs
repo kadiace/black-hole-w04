@@ -114,7 +114,7 @@ public class PlayerController : MonoBehaviour, IPressable, IInteractor
         ProcessRotation();
         ProcessMove();
 
-        Debug.Log($"IsGrounded: {_isGrounded}");
+        //Debug.Log($"IsGrounded: {_isGrounded}");
     }
 
     private void ProcessLookInput()

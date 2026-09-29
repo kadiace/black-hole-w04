@@ -61,6 +61,8 @@ public class SandMesh : MonoBehaviour
     // 모양이 바뀔 때마다 증가 (유체 장애물 갱신용)
     public int ShapeVersion { get; private set; }
 
+    float diagSpacing;
+
     private void Awake()
     {
         // 여러 모래의 틱이 같은 프레임에 몰리지 않게 분산
@@ -77,6 +79,8 @@ public class SandMesh : MonoBehaviour
         m_modifiedVerts = (Vector3[])m_verticies.Clone();
 
 
+
+
         if (GetComponent<MeshMake>())
         {
             spaceX = 1 / GetComponent<MeshMake>().Divid;
@@ -91,12 +95,12 @@ public class SandMesh : MonoBehaviour
             xSize = GetComponent<WhiteholeMeshMake>().xSize;
             zSize = GetComponent<WhiteholeMeshMake>().zSize;
         }
-
+        diagSpacing = Mathf.Sqrt(spaceX * spaceX + spaceY * spaceY);
         heightChange = new float[(xSize + 1) * (zSize + 1)];
         m_mesh.MarkDynamic();
     }
 
-    void RecalculateMesh()
+    public void RecalculateMesh()
     {
         if (loseSand)
         {
@@ -327,6 +331,7 @@ public class SandMesh : MonoBehaviour
     {
 
         float amountToPour = Managers.Gravity.savedSand;
+        Debug.Log(amountToPour);
         if (Managers.Gravity.savedSand <= 50)
         {
             Managers.Gravity.savedSand = 0;
@@ -364,7 +369,7 @@ public class SandMesh : MonoBehaviour
 
             // 중심에서 가장 많이 올라가고, 반경 끝에서 0이 되는 부드러운 가중치
             float distance01 = Mathf.Sqrt(distanceSqr) / radius;
-            float weight = 1f - Mathf.SmoothStep(0f, 1f, distance01);
+            float weight = Weight(distance01);
 
             m_modifiedVerts[v].y += amountToPour * weight / totalWeight;
             MarkDirty(v);
@@ -375,6 +380,12 @@ public class SandMesh : MonoBehaviour
         RecalculateMesh();
 
         return true;
+    }
+    [SerializeField, Range(0f, 1f)] private float flatTop = 0.3f;
+    float Weight(float distance01)
+    {
+        float t = Mathf.Clamp01((distance01 - flatTop) / (1f - flatTop));
+        return 1f - Mathf.SmoothStep(0f, 1f, t);
     }
 
     void SandRelaxation(float _deltatime)
@@ -405,11 +416,16 @@ public class SandMesh : MonoBehaviour
                 MeshHeightChange(
                     a, b, _deltatime, Vector2.up, spaceY);
 
-                // 삼각형의 b-c 대각선 이웃
-                //MeshHeightChange(
-                //    b, c, _deltatime,
-                //    new Vector2(1f, -1f).normalized,
-                //    diagonalSpacing);
+                //삼각형의 b-c 대각선 이웃
+
+                MeshHeightChange(
+                    b, c, _deltatime,
+                    new Vector2(1f, -1f).normalized,
+                    diagSpacing);
+
+                int d = b + 1;   // a의 반대편 대각선 (+x, +z)
+
+                MeshHeightChange(a, d, _deltatime, Vector2.one, diagSpacing);
 
 
             }
@@ -446,7 +462,7 @@ public class SandMesh : MonoBehaviour
         float excess = Mathf.Abs(distance) - allowedHeightDifference;
         float amount = excess * _deltatime;
 
-        amount = Mathf.Min(amount * flowRate, excess / 4);
+        amount = Mathf.Min(amount * flowRate, excess / 8);
         if (excess > 0)
         {
             if (distance < 0)

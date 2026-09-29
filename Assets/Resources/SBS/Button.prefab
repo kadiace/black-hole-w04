@@ -17,7 +17,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &5807903550637139509
 Transform:
@@ -160,3 +160,4 @@ MonoBehaviour:
   buttonType: 2
   timerDuration: 3
   logicTarget: {fileID: 0}
+  cylinder: {fileID: 5070164781670483321}

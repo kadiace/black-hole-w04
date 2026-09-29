@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Stage4SceneContext : SceneContext
 {
@@ -32,5 +33,11 @@ public class Stage4SceneContext : SceneContext
 
         _whiteHoleGun.SetActive(false);
         Managers.Gravity.CanFireWhiteHole = true;
+    }
+
+    public void RestartAfterDrowning()
+    {
+        Managers.Clear();
+        SceneManager.LoadScene(SceneType.Stage4.ToString());
     }
 }

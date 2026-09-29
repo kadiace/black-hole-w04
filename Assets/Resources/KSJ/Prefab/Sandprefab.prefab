@@ -63,6 +63,7 @@ MonoBehaviour:
   minimumHeight: 0
   flowRate: 10
   loseSand: 0
+  flatTop: 0.5
 --- !u!33 &4618873162303270020
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -158,7 +159,8 @@ MonoBehaviour:
   zSize: 20
   spaceX: 0
   spaceY: 0
-  vertexSpacing: 0.25
+  vertexSpacing: 0.2
+  maxVerticesPerAxis: 128
 --- !u!54 &3882034830627240421
 Rigidbody:
   m_ObjectHideFlags: 0
