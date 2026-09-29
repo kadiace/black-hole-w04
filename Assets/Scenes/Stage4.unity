@@ -1594,8 +1594,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 731600f24230cae4598167dfad110860, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage3SceneContext
-  _guideCanvas: {fileID: 1582214434}
-  _text: {fileID: 1582214430}
+  _guideCanvas: {fileID: 1582214433}
   _nextStage: {fileID: 1136892693}
   _whiteHoleGun: {fileID: 1799892083}
   _whiteHoleGunCollider: {fileID: 1507043176}
@@ -3254,17 +3253,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
---- !u!114 &1582214430 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7185344025104889915, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-  m_PrefabInstance: {fileID: 1582214429}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
 --- !u!224 &1582214431 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6844568154633177126, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
@@ -3286,17 +3274,12 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: -4602587650964510666, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
   m_PrefabInstance: {fileID: 1582214429}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1582214434}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 35455eefb1de93a44809eef6d940e706, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GuideCanvas
---- !u!1 &1582214434 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6199676943508247232, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-  m_PrefabInstance: {fileID: 1582214429}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1646849644
 GameObject:
   m_ObjectHideFlags: 0

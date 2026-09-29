@@ -7,9 +7,7 @@ public abstract class SceneContext : MonoBehaviour
 {
     [Header("Guide")]
     [SerializeField]
-    private GameObject _guideCanvas;
-    [SerializeField]
-    private Text _text;
+    private GuideCanvas _guideCanvas;
 
     [Header("Next Stage")]
     [SerializeField]
@@ -29,8 +27,8 @@ public abstract class SceneContext : MonoBehaviour
     {
         Managers.Input.SetInputMode(InputMode.UI);
 
-        _text.text = Util.ReplaceBindingName(message);
-        _guideCanvas.SetActive(true);
+        _guideCanvas.Text = message;
+        _guideCanvas.gameObject.SetActive(true);
     }
 
     private void RestartStage(InputAction.CallbackContext context)

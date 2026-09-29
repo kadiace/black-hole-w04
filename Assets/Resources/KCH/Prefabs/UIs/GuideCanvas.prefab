@@ -271,6 +271,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35455eefb1de93a44809eef6d940e706, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GuideCanvas
+  _text: {fileID: 7185344025104889915}
   _button: {fileID: 7233003029355868975}
 --- !u!1 &6304774811240299987
 GameObject:
