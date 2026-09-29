@@ -100,6 +100,8 @@ public sealed class FluidSimulation : MonoBehaviour
     [SerializeField] private bool autoCollectObstacles = true;
     [SerializeField] private LayerMask obstacleLayers = ~0;
     [SerializeField] private Collider[] staticObstacles;
+    [SerializeField, Min(0f)] private float sandObstacleRefreshInterval = 0.1f;
+    [SerializeField, Min(1)] private int maxSandTileRebuildsPerStep = 16;
 
     // 디버그 설정
     [SerializeField] private bool drawGridBounds = true;
@@ -164,6 +166,15 @@ public sealed class FluidSimulation : MonoBehaviour
     private readonly HashSet<Collider> observedMovingObstacles = new HashSet<Collider>();
     private readonly List<Collider> removedMovingObstacles = new List<Collider>();
     private readonly HashSet<int> dirtyObstacleTiles = new HashSet<int>();
+    private float nextSandObstacleRefreshTime;
+    private readonly HashSet<Vector3Int> pendingSandTiles = new HashSet<Vector3Int>();
+    private readonly List<Vector3Int> sandTileBatch = new List<Vector3Int>();
+    private static readonly Comparer<Vector3Int> TileComparer = Comparer<Vector3Int>.Create(CompareTiles);
+
+    // 타일별 장애물 SDF 캐시
+    private readonly Dictionary<Vector3Int, float[]> tileSdfCache = new Dictionary<Vector3Int, float[]>();
+    private readonly List<Vector3Int> staleSdfTiles = new List<Vector3Int>();
+    private int tileSdfCacheSignature;
 
     // 타일 커널
     private int clearMissingTilesKernel;
@@ -494,7 +505,7 @@ public sealed class FluidSimulation : MonoBehaviour
 
         CreateTileBuffers();
         BindBuffers();
-        BakeObstacleField(firstBuild);
+        BakeObstacleField(firstBuild, !firstBuild);
         UpdateRenderBounds();
         debugCellStates = null;
         return true;
@@ -1025,7 +1036,7 @@ public sealed class FluidSimulation : MonoBehaviour
         BakeObstacleField(true);
     }
 
-    private void BakeObstacleField(bool logResult)
+    private void BakeObstacleField(bool logResult, bool reuseCachedTiles = false)
     {
         if (obstacleSdfBuffer == null)
         {
@@ -1033,18 +1044,55 @@ public sealed class FluidSimulation : MonoBehaviour
         }
 
         Collider[] obstacles = CollectObstacles();
+        int signature = ObstacleSignature(obstacles);
+
+        // 장애물 구성이 같으면 기존 타일 SDF 재사용, 새 타일만 계산
+        if (!reuseCachedTiles || signature != tileSdfCacheSignature)
+        {
+            tileSdfCache.Clear();
+            reuseCachedTiles = false;
+        }
+
+        tileSdfCacheSignature = signature;
         var values = new float[GridCellCount];
         var tileResolution = new Vector3Int(CellsPerTile, CellsPerTile, CellsPerTile);
 
         for (int i = 0; i < activeTiles.Count; i++)
         {
             Vector3Int tile = activeTiles[i];
-            Vector3 tileMin = new Vector3(tile.x, tile.y, tile.z) * TileWorldSize;
-            float[] tileValues = FluidObstacleField.Build(tileMin, tileResolution, cellSize, obstacles);
+
+            if (!tileSdfCache.TryGetValue(tile, out float[] tileValues))
+            {
+                Vector3 tileMin = new Vector3(tile.x, tile.y, tile.z) * TileWorldSize;
+                tileValues = FluidObstacleField.Build(tileMin, tileResolution, cellSize, obstacles);
+                tileSdfCache[tile] = tileValues;
+            }
+
             Array.Copy(tileValues, 0, values, i * CellCountPerTile, CellCountPerTile);
         }
 
+        // 비활성 타일은 이동 장애물 갱신 대상이 아니므로 캐시에서 제거
+        staleSdfTiles.Clear();
+        foreach (Vector3Int tile in tileSdfCache.Keys)
+        {
+            if (!activeTileSet.Contains(tile))
+            {
+                staleSdfTiles.Add(tile);
+            }
+        }
+
+        foreach (Vector3Int tile in staleSdfTiles)
+        {
+            tileSdfCache.Remove(tile);
+        }
+
         obstacleSdfBuffer.SetData(values);
+
+        // 재사용한 타일은 기존 자세 기준이므로 이동 장애물 추적을 유지
+        if (reuseCachedTiles)
+        {
+            return;
+        }
 
         movingObstaclePoses.Clear();
         foreach (Collider obstacle in obstacles)
@@ -1061,6 +1109,20 @@ public sealed class FluidSimulation : MonoBehaviour
         }
     }
 
+    private static int ObstacleSignature(Collider[] obstacles)
+    {
+        unchecked
+        {
+            int hash = obstacles.Length;
+            foreach (Collider obstacle in obstacles)
+            {
+                hash += obstacle.GetInstanceID() * 486187739;
+            }
+
+            return hash;
+        }
+    }
+
     // 이동 장애물 갱신
     private void RefreshMovingObstacles()
     {
@@ -1068,6 +1130,9 @@ public sealed class FluidSimulation : MonoBehaviour
         observedMovingObstacles.Clear();
         removedMovingObstacles.Clear();
         dirtyObstacleTiles.Clear();
+
+        bool sandRefreshDue = Time.time >= nextSandObstacleRefreshTime;
+        bool sandRefreshed = false;
 
         foreach (Collider obstacle in obstacles)
         {
@@ -1081,6 +1146,21 @@ public sealed class FluidSimulation : MonoBehaviour
 
             if (movingObstaclePoses.TryGetValue(obstacle, out ObstaclePose previous))
             {
+                // 모래는 제자리에서 모양만 바뀜 → 바뀐 영역만, 주기 제한으로 갱신
+                SandMesh sand = obstacle is MeshCollider ? obstacle.GetComponentInParent<SandMesh>() : null;
+
+                if (sand != null && previous.matrix.Equals(current.matrix))
+                {
+                    if (sandRefreshDue && sand.TryConsumeChangedBounds(out Bounds changedBounds))
+                    {
+                        MarkObstacleTiles(changedBounds, pendingSandTiles);
+                        movingObstaclePoses[obstacle] = current;
+                        sandRefreshed = true;
+                    }
+
+                    continue;
+                }
+
                 if (previous.Matches(current))
                 {
                     continue;
@@ -1109,6 +1189,37 @@ public sealed class FluidSimulation : MonoBehaviour
             movingObstaclePoses.Remove(obstacle);
         }
 
+        if (sandRefreshed)
+        {
+            nextSandObstacleRefreshTime = Time.time + sandObstacleRefreshInterval;
+        }
+
+        // 모래 변경 타일은 스텝당 개수를 제한해 여러 프레임에 나눠 갱신
+        if (pendingSandTiles.Count > 0)
+        {
+            sandTileBatch.Clear();
+            foreach (Vector3Int tile in pendingSandTiles)
+            {
+                if (sandTileBatch.Count >= maxSandTileRebuildsPerStep)
+                {
+                    break;
+                }
+
+                sandTileBatch.Add(tile);
+            }
+
+            foreach (Vector3Int tile in sandTileBatch)
+            {
+                pendingSandTiles.Remove(tile);
+                int tileIndex = activeTiles.BinarySearch(tile, TileComparer);
+
+                if (tileIndex >= 0)
+                {
+                    dirtyObstacleTiles.Add(tileIndex);
+                }
+            }
+        }
+
         Vector3Int resolution = new Vector3Int(CellsPerTile, CellsPerTile, CellsPerTile);
 
         foreach (int tileIndex in dirtyObstacleTiles)
@@ -1116,12 +1227,13 @@ public sealed class FluidSimulation : MonoBehaviour
             Vector3Int tile = activeTiles[tileIndex];
             Vector3 tileMin = new Vector3(tile.x, tile.y, tile.z) * TileWorldSize;
             float[] values = FluidObstacleField.Build(tileMin, resolution, cellSize, obstacles);
+            tileSdfCache[tile] = values;
             obstacleSdfBuffer.SetData(values, 0, tileIndex * CellCountPerTile, CellCountPerTile);
         }
     }
 
     // 변경된 타일 찾기
-    private void MarkObstacleTiles(Bounds bounds)
+    private void MarkObstacleTiles(Bounds bounds, HashSet<Vector3Int> coordinateTarget = null)
     {
         bounds.Expand(cellSize * 6f);
         Vector3 tileSize = Vector3.one * TileWorldSize;
@@ -1132,7 +1244,16 @@ public sealed class FluidSimulation : MonoBehaviour
             Vector3 tileMin = new Vector3(tile.x, tile.y, tile.z) * TileWorldSize;
             Bounds tileBounds = new Bounds(tileMin + tileSize * 0.5f, tileSize);
 
-            if (tileBounds.Intersects(bounds))
+            if (!tileBounds.Intersects(bounds))
+            {
+                continue;
+            }
+
+            if (coordinateTarget != null)
+            {
+                coordinateTarget.Add(tile);
+            }
+            else
             {
                 dirtyObstacleTiles.Add(i);
             }
@@ -1394,6 +1515,8 @@ public sealed class FluidSimulation : MonoBehaviour
         activeTiles.Clear();
         activeTileSet.Clear();
         pendingPortalTiles.Clear();
+        tileSdfCache.Clear();
+        pendingSandTiles.Clear();
         movingObstaclePoses.Clear();
         observedMovingObstacles.Clear();
         removedMovingObstacles.Clear();
@@ -1449,6 +1572,21 @@ internal static class FluidObstacleField
             MeshCollider meshCollider = collider as MeshCollider;
             Vector3[] meshVertices = null;
             int[] triangles = null;
+
+            // 모래는 높이맵이라 셀당 O(1) 샘플링 (삼각형 전수 검사는 타일당 수 초가 걸림)
+            SandMesh sand = meshCollider != null ? meshCollider.GetComponentInParent<SandMesh>() : null;
+
+            if (sand != null)
+            {
+                BuildSandField(field, gridMin, resolution, cellSize, bounds, sand);
+                continue;
+            }
+
+            if (collider is BoxCollider boxCollider)
+            {
+                BuildBoxField(field, gridMin, resolution, cellSize, bounds, boxCollider);
+                continue;
+            }
 
             if (meshCollider != null)
             {
@@ -1512,6 +1650,75 @@ internal static class FluidObstacleField
         }
 
         return field;
+    }
+
+    // bounds 안에 중심이 들어오는 셀 범위
+    private static void CellRange(Bounds bounds, Vector3 gridMin, Vector3Int resolution, float cellSize, out Vector3Int from, out Vector3Int to)
+    {
+        Vector3 minimum = (bounds.min - gridMin) / cellSize - Vector3.one * 0.5f;
+        Vector3 maximum = (bounds.max - gridMin) / cellSize - Vector3.one * 0.5f;
+        from = new Vector3Int(Mathf.Max(0, Mathf.CeilToInt(minimum.x)), Mathf.Max(0, Mathf.CeilToInt(minimum.y)), Mathf.Max(0, Mathf.CeilToInt(minimum.z)));
+        to = new Vector3Int(Mathf.Min(resolution.x - 1, Mathf.FloorToInt(maximum.x)), Mathf.Min(resolution.y - 1, Mathf.FloorToInt(maximum.y)), Mathf.Min(resolution.z - 1, Mathf.FloorToInt(maximum.z)));
+    }
+
+    // 박스 변환을 셀마다 다시 구하지 않도록 한 번만 계산 (BoxDistance와 같은 식)
+    private static void BuildBoxField(float[] field, Vector3 gridMin, Vector3Int resolution, float cellSize, Bounds bounds, BoxCollider box)
+    {
+        Transform boxTransform = box.transform;
+        Vector3 center = boxTransform.TransformPoint(box.center);
+        Quaternion inverseRotation = Quaternion.Inverse(boxTransform.rotation);
+        Vector3 scale = boxTransform.lossyScale;
+        Vector3 half = Vector3.Scale(box.size * 0.5f, new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
+
+        CellRange(bounds, gridMin, resolution, cellSize, out Vector3Int from, out Vector3Int to);
+
+        for (int z = from.z; z <= to.z; z++)
+        {
+            for (int y = from.y; y <= to.y; y++)
+            {
+                for (int x = from.x; x <= to.x; x++)
+                {
+                    Vector3 point = gridMin + new Vector3(x + 0.5f, y + 0.5f, z + 0.5f) * cellSize;
+
+                    if (!bounds.Contains(point))
+                    {
+                        continue;
+                    }
+
+                    Vector3 local = inverseRotation * (point - center);
+                    Vector3 difference = new Vector3(Mathf.Abs(local.x) - half.x, Mathf.Abs(local.y) - half.y, Mathf.Abs(local.z) - half.z);
+                    Vector3 outside = Vector3.Max(difference, Vector3.zero);
+                    float inside = Mathf.Min(Mathf.Max(difference.x, Mathf.Max(difference.y, difference.z)), 0f);
+
+                    int index = x + resolution.x * (y + resolution.y * z);
+                    field[index] = Mathf.Min(field[index], outside.magnitude + inside);
+                }
+            }
+        }
+    }
+
+    private static void BuildSandField(float[] field, Vector3 gridMin, Vector3Int resolution, float cellSize, Bounds bounds, SandMesh sand)
+    {
+        CellRange(bounds, gridMin, resolution, cellSize, out Vector3Int from, out Vector3Int to);
+
+        for (int z = from.z; z <= to.z; z++)
+        {
+            for (int y = from.y; y <= to.y; y++)
+            {
+                for (int x = from.x; x <= to.x; x++)
+                {
+                    Vector3 point = gridMin + new Vector3(x + 0.5f, y + 0.5f, z + 0.5f) * cellSize;
+
+                    if (!bounds.Contains(point) || !sand.TryGetSignedDistance(point, out float distance))
+                    {
+                        continue;
+                    }
+
+                    int index = x + resolution.x * (y + resolution.y * z);
+                    field[index] = Mathf.Min(field[index], distance);
+                }
+            }
+        }
     }
 
     private static float BoxDistance(BoxCollider box, Vector3 point)
