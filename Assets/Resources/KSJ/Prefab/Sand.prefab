@@ -60,8 +60,10 @@ MonoBehaviour:
   spaceY: 0
   flowTrigger: {fileID: 0}
   lowerSpeed: 100
+  minimumHeight: -5
   flowRate: 3
-  losesand: 0
+  _minCap: 1000
+  loseSand: 0
 --- !u!114 &1562034880719278991
 MonoBehaviour:
   m_ObjectHideFlags: 0

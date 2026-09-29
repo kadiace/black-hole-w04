@@ -15,13 +15,18 @@ public class SandFall : MonoBehaviour
 
     private GameObject m_currentSand;
 
+
+
     public void Start()
     {
         m_timer = fallTimer;
     }
     void Fall()
     {
-        RaycastHit[] hits = Physics.RaycastAll(transform.position + Vector3.up * range, Vector3.down, range * 2, groundMask);
+
+        Vector3 originPos = (transform.parent != null) ? transform.parent.position : transform.position;
+
+        RaycastHit[] hits = Physics.RaycastAll(originPos + Vector3.up * range, Vector3.down, range * 2, groundMask);
 
         if (hits.Length == 0)
             return;
@@ -30,6 +35,9 @@ public class SandFall : MonoBehaviour
         bool foundSand = false;
         RaycastHit sandHit = default;
         SandMesh hitSand = null;
+        float tempScale = Managers.Gravity.savedSand / 1000f;
+        tempScale = Mathf.Max(tempScale, 0.1f);
+        transform.localScale = new Vector3(tempScale, transform.localScale.y, tempScale);
 
         foreach (RaycastHit hit in hits)
         {
@@ -50,7 +58,12 @@ public class SandFall : MonoBehaviour
         if (foundSand)
         {
             m_currentSand = hitSand.gameObject;
-            hitSand.SandUp(sandHit);
+            if (!hitSand.SandUp(sandHit))
+            {
+                gameObject.SetActive(false);
+            }
+
+            //StretchToPoint(sandHit.point);
             return;
         }
 
@@ -73,12 +86,35 @@ public class SandFall : MonoBehaviour
         WhiteholeMeshMake meshMaker = m_currentSand.GetComponent<WhiteholeMeshMake>();
 
         meshMaker.GenerateOnGround(groundHit);
-        newSand.SandUp(groundHit);
 
 
+        if (!newSand.SandUp(groundHit))
+        {
+            gameObject.SetActive(false);
+        }
 
+
+        //StretchToPoint(groundHit.point);
 
     }
+
+    //private void StretchToPoint(Vector3 hitPoint)
+    //{
+
+    //    Vector3 startPos = transform.position;
+
+
+    //    float distance = Mathf.Abs(startPos.y - hitPoint.y);
+
+    //    Vector3 newScale = transform.localScale;
+    //    newScale.y = startPos.y - (distance / 2f);
+    //    transform.localScale = newScale;
+
+    //    Vector3 newPosition = transform.position;
+    //    newPosition.y = startPos.y - (distance / 2f);
+    //    transform.position = newPosition;
+
+    //}
 
     private void Update()
     {

@@ -68,7 +68,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 5d425e764288b95419fbd717245a6859, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -135,4 +135,4 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   sandPrefab: {fileID: 2444789786704727229, guid: 7bf59014a452f7e4aa3afebff0b1adde, type: 3}
-  fallTimer: 1
+  fallTimer: 0.5

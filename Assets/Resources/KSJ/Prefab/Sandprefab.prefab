@@ -62,6 +62,7 @@ MonoBehaviour:
   lowerSpeed: 100
   minimumHeight: 0
   flowRate: 3
+  _minCap: 1000
   loseSand: 0
 --- !u!33 &4618873162303270020
 MeshFilter:
