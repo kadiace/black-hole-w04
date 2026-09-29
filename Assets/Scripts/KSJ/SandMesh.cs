@@ -327,6 +327,7 @@ public class SandMesh : MonoBehaviour
     {
 
         float amountToPour = Managers.Gravity.savedSand;
+        Debug.Log(amountToPour);
         if (Managers.Gravity.savedSand <= 50)
         {
             Managers.Gravity.savedSand = 0;
