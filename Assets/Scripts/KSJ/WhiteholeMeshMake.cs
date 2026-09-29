@@ -18,12 +18,15 @@ public class WhiteholeMeshMake : MonoBehaviour
     // 큰 바닥에서 정점이 폭증하지 않도록 축당 상한 (80m 바닥 기준 0.25 간격이면 10만 정점)
     public int maxVerticesPerAxis = 128;
 
+    private MeshCollider m_meshCollider;
+
 
 
     private void Awake()
     {
         m_mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = m_mesh;
+        m_meshCollider = GetComponentInChildren<MeshCollider>();
     }
 
 
@@ -36,6 +39,7 @@ public class WhiteholeMeshMake : MonoBehaviour
         m_mesh.vertices = m_vertices;
         m_mesh.triangles = m_triangles;
         m_mesh.uv = uvs;
+        m_meshCollider.sharedMesh = m_mesh;
 
         m_mesh.RecalculateBounds();
         m_mesh.RecalculateNormals();
@@ -95,6 +99,7 @@ public class WhiteholeMeshMake : MonoBehaviour
 
 
         UpdateMesh();
+
 
 
     }

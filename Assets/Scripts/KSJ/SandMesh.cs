@@ -96,7 +96,7 @@ public class SandMesh : MonoBehaviour
         m_mesh.MarkDynamic();
     }
 
-    void RecalculateMesh()
+    public void RecalculateMesh()
     {
         if (loseSand)
         {
