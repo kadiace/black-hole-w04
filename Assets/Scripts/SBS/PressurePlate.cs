@@ -54,6 +54,11 @@ public class PressurePlate : MonoBehaviour
         OnExit(other);
     }
 
+    public void SetLogicTarget(LogicBase temp)
+    {
+        logicTarget = temp;
+    }
+
 
     private void Update()
     {

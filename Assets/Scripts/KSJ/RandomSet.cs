@@ -6,6 +6,8 @@ public class RandomSet : MonoBehaviour
     [SerializeField]
     private Transform[] _points;
     [SerializeField]
+    private LogicBase[] _logics;
+    [SerializeField]
     private GameObject _cubeObject1;
     [SerializeField]
     private GameObject _cubeObject2;
@@ -16,6 +18,7 @@ public class RandomSet : MonoBehaviour
     {
         List<int> index = new List<int>();
 
+
         for (int i = 0; i < _points.Length; i++)
         {
             index.Add(i);
@@ -23,6 +26,8 @@ public class RandomSet : MonoBehaviour
 
         _cubeObject1.transform.position = PopRandom(index);
         _cubeObject2.transform.position = PopRandom(index);
+
+
         _switchObject.transform.position = PopRandom(index);
     }
 
@@ -32,6 +37,7 @@ public class RandomSet : MonoBehaviour
         int pick = Random.Range(0, templist.Count);
         int pointIndex = templist[pick];
         templist.RemoveAt(pick);
+        _switchObject.GetComponent<PressurePlate>().SetLogicTarget(_logics[pointIndex]);
         return _points[pointIndex].position;
 
 
