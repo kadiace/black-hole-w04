@@ -535,7 +535,7 @@ MonoBehaviour:
   minimumQuadrants: 4
   minimumParticlesPerQuadrant: 5
   sampleInterval: 0.1
-  onDelay: 1
+  onDelay: 2
   offDelay: 0.3
 --- !u!1 &187914759
 GameObject:
@@ -917,7 +917,7 @@ GameObject:
   - component: {fileID: 266956584}
   - component: {fileID: 266956583}
   m_Layer: 0
-  m_Name: Cord3
+  m_Name: Cord4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1754,6 +1754,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 575946839}
+  - component: {fileID: 575946840}
   m_Layer: 0
   m_Name: Cords
   m_TagString: Untagged
@@ -1781,6 +1782,29 @@ Transform:
   - {fileID: 2017381700}
   m_Father: {fileID: 1943348793}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &575946840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 575946838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3b401eee12582845aaab4332feabb00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FluidSensorVisualFeedback
+  sensor: {fileID: 167004509}
+  cords:
+  - {fileID: 1719704551}
+  - {fileID: 1067518301}
+  - {fileID: 1750730620}
+  - {fileID: 266956584}
+  - {fileID: 2017381702}
+  poweredMaterial: {fileID: 2100000, guid: a22c6ba53c66bda43a042f28a73f89da, type: 2}
+  signText: {fileID: 1707227796}
+  poweredText: O P E N
+  poweredColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!1 &611017529
 GameObject:
   m_ObjectHideFlags: 0
@@ -2791,7 +2815,7 @@ GameObject:
   - component: {fileID: 1067518301}
   - component: {fileID: 1067518300}
   m_Layer: 0
-  m_Name: Cord1
+  m_Name: Cord2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4046,7 +4070,7 @@ GameObject:
   - component: {fileID: 1719704551}
   - component: {fileID: 1719704550}
   m_Layer: 0
-  m_Name: Cord
+  m_Name: Cord1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4158,7 +4182,7 @@ GameObject:
   - component: {fileID: 1750730620}
   - component: {fileID: 1750730619}
   m_Layer: 0
-  m_Name: Cord2
+  m_Name: Cord3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4872,7 +4896,7 @@ GameObject:
   - component: {fileID: 2017381702}
   - component: {fileID: 2017381701}
   m_Layer: 0
-  m_Name: Cord4
+  m_Name: Cord5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

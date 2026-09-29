@@ -21,6 +21,25 @@ public sealed class FluidLevelSensor : MonoBehaviour
     [SerializeField, Min(0f)] private float offDelay = 0.3f;
 
     public bool IsFilled { get; private set; }
+    public bool IsOnDelayCounting => isActiveAndEnabled && candidateFilled && !IsFilled;
+
+    public float OnDelayProgress
+    {
+        get
+        {
+            if (!IsOnDelayCounting)
+            {
+                return 0f;
+            }
+
+            if (onDelay <= 0f)
+            {
+                return 1f;
+            }
+
+            return Mathf.Clamp01((Time.time - candidateSince) / onDelay);
+        }
+    }
 
     private ComputeBuffer countBuffer;
     private AsyncGPUReadbackRequest readback;
