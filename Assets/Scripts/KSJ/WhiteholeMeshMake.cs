@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class WhiteholeMeshMake : MonoBehaviour
 {
@@ -14,6 +15,8 @@ public class WhiteholeMeshMake : MonoBehaviour
 
     public float spaceY;
     public float vertexSpacing = 0.25f;
+    // 큰 바닥에서 정점이 폭증하지 않도록 축당 상한 (80m 바닥 기준 0.25 간격이면 10만 정점)
+    public int maxVerticesPerAxis = 128;
 
 
 
@@ -28,6 +31,7 @@ public class WhiteholeMeshMake : MonoBehaviour
     public void UpdateMesh()
     {
         m_mesh.Clear();
+        m_mesh.indexFormat = m_vertices.Length > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16;
         CalcTriangles();
         m_mesh.vertices = m_vertices;
         m_mesh.triangles = m_triangles;
@@ -36,7 +40,7 @@ public class WhiteholeMeshMake : MonoBehaviour
         m_mesh.RecalculateBounds();
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
 
         if (m_vertices == null)
@@ -53,10 +57,10 @@ public class WhiteholeMeshMake : MonoBehaviour
         Collider ground = hit.collider;
         Bounds bounds = ground.bounds;
 
-        xSize = Mathf.Max(
-            1, Mathf.CeilToInt(bounds.size.x / vertexSpacing));
-        zSize = Mathf.Max(
-            1, Mathf.CeilToInt(bounds.size.z / vertexSpacing));
+        xSize = Mathf.Clamp(
+            Mathf.CeilToInt(bounds.size.x / vertexSpacing), 1, maxVerticesPerAxis);
+        zSize = Mathf.Clamp(
+            Mathf.CeilToInt(bounds.size.z / vertexSpacing), 1, maxVerticesPerAxis);
 
         float width = bounds.size.x;
         float depth = bounds.size.z;

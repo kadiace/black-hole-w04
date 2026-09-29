@@ -89,7 +89,7 @@ public class MeshMake : MonoBehaviour
         m_mesh.RecalculateBounds();
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
 
         if(m_vertices == null)
