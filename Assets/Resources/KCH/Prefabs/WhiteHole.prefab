@@ -179,7 +179,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 53ede76edde2c9546a09bc542d104e9e, type: 2}
+  - {fileID: 2100000, guid: 905cf2dc706cae44fa86ff6f4059ff86, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -275,8 +275,8 @@ MonoBehaviour:
   _eventHorizon: {fileID: 2421767849670086457}
   _emission: {fileID: 9219686467785724924}
   _renderer: {fileID: 179252078669035105}
-  _onMaterial: {fileID: 2100000, guid: c88fa2aeb6a84bf449bf2b8c50dd3de1, type: 2}
-  _offMaterial: {fileID: 2100000, guid: 53ede76edde2c9546a09bc542d104e9e, type: 2}
+  _onMaterial: {fileID: 2100000, guid: 905cf2dc706cae44fa86ff6f4059ff86, type: 2}
+  _offMaterial: {fileID: 2100000, guid: 905cf2dc706cae44fa86ff6f4059ff86, type: 2}
   _sand: {fileID: 7057918910842938783}
 --- !u!1 &9006829742927055558
 GameObject:
