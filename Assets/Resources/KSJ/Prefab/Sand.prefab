@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 6260614875749420023}
   - component: {fileID: 1533948234068244593}
   - component: {fileID: 628119323232255811}
-  m_Layer: 6
+  m_Layer: 10
   m_Name: Sand
   m_TagString: Sand
   m_Icon: {fileID: 0}
@@ -62,7 +62,6 @@ MonoBehaviour:
   lowerSpeed: 100
   minimumHeight: -5
   flowRate: 3
-  _minCap: 1000
   loseSand: 0
 --- !u!114 &1562034880719278991
 MonoBehaviour:

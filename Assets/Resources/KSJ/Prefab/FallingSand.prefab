@@ -130,7 +130,7 @@ MonoBehaviour:
   range: 9999
   groundMask:
     serializedVersion: 2
-    m_Bits: 320
+    m_Bits: 1344
   flowSandMask:
     serializedVersion: 2
     m_Bits: 256

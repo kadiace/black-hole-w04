@@ -136,7 +136,10 @@ MonoBehaviour:
   _jumpGroundedCheckLockTime: 0.15
   _groundLayer:
     serializedVersion: 2
-    m_Bits: 320
+    m_Bits: 1344
+  _sandLayer:
+    serializedVersion: 2
+    m_Bits: 1024
   _groundCheckDistance: 0.01
   _maxGroundAngle: 50
   interactDistance: 5
