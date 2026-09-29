@@ -7,11 +7,11 @@ public abstract class SceneContext : MonoBehaviour
 {
     [Header("Guide")]
     [SerializeField]
-    private GuideCanvas _guideCanvas;
+    protected GuideCanvas _guideCanvas;
 
     [Header("Stage")]
     [SerializeField]
-    private SceneType _currentStage;
+    protected SceneType _currentStage;
     [SerializeField]
     private SceneType _nextStage;
     [SerializeField]
@@ -26,7 +26,7 @@ public abstract class SceneContext : MonoBehaviour
         Managers.Input.PlayerMap.Restart.performed += RestartStage;
     }
 
-    private void OnDestroy()
+    protected virtual void OnDestroy()
     {
         Managers.Input.PlayerMap.Restart.performed -= RestartStage;
     }
@@ -47,7 +47,7 @@ public abstract class SceneContext : MonoBehaviour
         SceneManager.LoadScene(_currentStage.ToString());
     }
 
-    private void OnNextStageEnter(Collider other)
+    protected virtual void OnNextStageEnter(Collider other)
     {
         PlayerController player = other.GetComponentInParent<PlayerController>();
         if (player == null)

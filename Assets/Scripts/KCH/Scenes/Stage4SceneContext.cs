@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class Stage4SceneContext : SceneContext
@@ -38,6 +40,6 @@ public class Stage4SceneContext : SceneContext
     public void RestartAfterDrowning()
     {
         Managers.Clear();
-        SceneManager.LoadScene(SceneType.Stage4.ToString());
+        SceneManager.LoadScene(_currentStage.ToString());
     }
 }

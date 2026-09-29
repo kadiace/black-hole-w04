@@ -268,6 +268,8 @@ public class BlackHoleController : MonoBehaviour
 
     private IEnumerator TeleportThroughWhiteHole(Rigidbody rb, GravityController gravityController)
     {
+        Managers.Gravity.CanFireBlackHole = false;
+        Managers.Gravity.CanFireWhiteHole = false;
         CinemachineCamera cinemachineCamera =
             Camera.main.GetComponent<CinemachineBrain>().ActiveVirtualCamera as CinemachineCamera;
         Transform followTarget = cinemachineCamera.Follow;
@@ -305,6 +307,9 @@ public class BlackHoleController : MonoBehaviour
 
         Time.timeScale = 1f;
         _isTeleporting = false;
+
+        Managers.Gravity.CanFireBlackHole = true;
+        Managers.Gravity.CanFireWhiteHole = true;
     }
 
     private IEnumerator LerpDistortion(LensDistortion lensDistortion, float from, float to, float duration)
