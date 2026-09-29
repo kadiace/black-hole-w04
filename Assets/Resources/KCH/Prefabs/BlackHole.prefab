@@ -4973,6 +4973,7 @@ GameObject:
   - component: {fileID: 8567919998846850515}
   - component: {fileID: 3489139180796171239}
   - component: {fileID: 1082359017915881012}
+  - component: {fileID: 3890130465294678895}
   m_Layer: 0
   m_Name: Sphere Volume
   m_TagString: Untagged
@@ -5033,6 +5034,21 @@ MonoBehaviour:
   blendDistance: 1
   weight: 1
   sharedProfile: {fileID: 11400000, guid: 32537baa60fc36547b81a6b2c6342b29, type: 2}
+--- !u!114 &3890130465294678895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5700586163748264983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f11b5091719a629419176eb32665d4e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DistortionController
+  _maxDistortion: 1
+  _endRadiusReference: {fileID: 8731766139792332749}
+  _playerController: {fileID: 0}
 --- !u!1 &8175516881334673423
 GameObject:
   m_ObjectHideFlags: 0
