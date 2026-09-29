@@ -119,17 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!114 &43668007 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7233003029355868975, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-  m_PrefabInstance: {fileID: 1934476871}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1 &47918790
 GameObject:
   m_ObjectHideFlags: 0
@@ -567,8 +556,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57a151ad65f94b24a825b7f1e85aa1a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage1SceneContext
-  _guideCanvas: {fileID: 1934476874}
-  _text: {fileID: 1934476873}
+  _guideCanvas: {fileID: 1934476875}
   _nextStage: {fileID: 1309728185}
   _blackHolePosition: {fileID: 297245709}
   _whiteHolePosition: {fileID: 285211050}
@@ -884,7 +872,7 @@ Transform:
   m_GameObject: {fileID: 285211049}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -10, y: 5, z: -80}
+  m_LocalPosition: {x: -10, y: 5, z: -85}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6352,17 +6340,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 184151860}
     m_Modifications:
-    - target: {fileID: -4602587650964510666, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-      propertyPath: _button
-      value: 
-      objectReference: {fileID: 43668007}
     - target: {fileID: 6199676943508247232, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
       propertyPath: m_Name
       value: GuideCanvas
-      objectReference: {fileID: 0}
-    - target: {fileID: 6199676943508247232, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6844568154633177126, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
       propertyPath: m_Pivot.x
@@ -6444,26 +6424,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7185344025104889915, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-      propertyPath: m_Text
-      value: "\uD14D\uC2A4\uD2B8\uC785\uB2C8\uB2E4."
-      objectReference: {fileID: 0}
-    - target: {fileID: 7233003029355868975, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1934476875}
-    - target: {fileID: 7233003029355868975, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnButtonClicked
-      objectReference: {fileID: 0}
-    - target: {fileID: 7233003029355868975, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: GuideCanvas, Assembly-CSharp
-      objectReference: {fileID: 0}
-    - target: {fileID: 7233003029355868975, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
-      value: UnityEngine.Object, UnityEngine
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6474,28 +6434,12 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 6844568154633177126, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
   m_PrefabInstance: {fileID: 1934476871}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1934476873 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7185344025104889915, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-  m_PrefabInstance: {fileID: 1934476871}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
---- !u!1 &1934476874 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6199676943508247232, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-  m_PrefabInstance: {fileID: 1934476871}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &1934476875 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: -4602587650964510666, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
   m_PrefabInstance: {fileID: 1934476871}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1934476874}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 35455eefb1de93a44809eef6d940e706, type: 3}

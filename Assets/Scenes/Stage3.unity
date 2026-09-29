@@ -218,23 +218,18 @@ PrefabInstance:
   m_SourcePrefab: {fileID: 100100000, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
 --- !u!114 &15661606 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7185344025104889915, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
+  m_CorrespondingSourceObject: {fileID: -4602587650964510666, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
   m_PrefabInstance: {fileID: 15661605}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Script: {fileID: 11500000, guid: 35455eefb1de93a44809eef6d940e706, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
+  m_EditorClassIdentifier: Assembly-CSharp::GuideCanvas
 --- !u!224 &15661607 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6844568154633177126, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
-  m_PrefabInstance: {fileID: 15661605}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &15661610 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6199676943508247232, guid: 8c9bc0dd7480cdf439e9007aebf6237e, type: 3}
   m_PrefabInstance: {fileID: 15661605}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &91506851
@@ -2089,8 +2084,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70e9c063cc7fb244d9bff2566f6adfee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stage3SceneContext
-  _guideCanvas: {fileID: 15661610}
-  _text: {fileID: 15661606}
+  _guideCanvas: {fileID: 15661606}
   _nextStage: {fileID: 1626524709}
   whiteholePos: {fileID: 93996969}
 --- !u!1 &1907526471

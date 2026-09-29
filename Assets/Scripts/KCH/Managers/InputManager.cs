@@ -48,8 +48,7 @@ public class InputManager
         PlayerMap = _inputActions.Player;
         UIMap = _inputActions.UI;
 
-        PlayerMap.Look.performed += CheckDeviceType;
-        PlayerMap.Look.canceled += CheckDeviceType;
+        InputSystem.onActionChange += CheckDeviceType;
 
         SetInputMode(InputMode.Player);
     }
@@ -85,5 +84,11 @@ public class InputManager
         }
     }
 
-    private void CheckDeviceType(InputAction.CallbackContext ctx) => GamePadConnected = ctx.control.device is Gamepad;
+    private void CheckDeviceType(object obj, InputActionChange change)
+    {
+        if (change != InputActionChange.ActionPerformed)
+            return;
+        InputAction action = obj as InputAction;
+        GamePadConnected = action?.activeControl?.device is Gamepad;
+    }
 }

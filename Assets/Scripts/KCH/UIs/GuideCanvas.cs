@@ -6,14 +6,22 @@ using UnityEngine.UI;
 public class GuideCanvas : MonoBehaviour
 {
     [SerializeField]
+    private Text _text;
+    [SerializeField]
     private Button _button;
+
+    public string Text { private get; set; }
 
     private InputAction _confirmAction;
 
     void Awake()
     {
-
         _confirmAction = Managers.Input.UIMap.Confirm;
+    }
+
+    void Update()
+    {
+        _text.text = Util.ReplaceBindingName(Text);
     }
 
     void OnEnable()
